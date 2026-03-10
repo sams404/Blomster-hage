@@ -8,8 +8,10 @@
   python run.py test <agent> # тест одного агента
 """
 import sys, os
+from dotenv import load_dotenv
 
 os.chdir(os.path.dirname(__file__))
+load_dotenv()
 
 
 def start_backend():
@@ -39,23 +41,30 @@ def test_agent(name: str):
     if name == "rosa":
         from agents.rosa import RosaDamascena
         a = RosaDamascena()
-        r = a.create_content_piece("AI-автоматизация для норвежского фриланса", "blog", "ru")
+        r = a.create("AI-автоматизация для норвежского фриланса", lang="ru")
         print("\n📝 Result:", r.get("title"))
         print(r.get("content", "")[:500])
     elif name == "helianthus":
         from agents.helianthus import Helianthus
         a = Helianthus()
         r = a.analyze_coin("bitcoin")
-        print("\n📊 Signal:", r.get("signal", "")[:300])
+        if r:
+            print("\n📊 Signal:", r.get("signal", "")[:300])
+        else:
+            print("hold — no signal sent")
     elif name == "poppy":
         from agents.poppy import PoppySales
         PoppySales().run()
     elif name == "fern":
         from agents.fern import FernProtocol
         FernProtocol().run()
+    elif name == "iris":
+        from agents.iris import IrisIntelligence
+        r = IrisIntelligence().morning_brief()
+        print("\n🧠 Brief:", str(r)[:500])
     else:
         print(f"Unknown agent: {name}")
-        print("Available: rosa, helianthus, poppy, fern")
+        print("Available: rosa, helianthus, poppy, fern, iris")
 
 
 if __name__ == "__main__":

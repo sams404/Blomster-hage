@@ -13,6 +13,7 @@ Tool Registry — централизованные инструменты для
   read_db      — Прочитать из SQLite
 """
 import os, re, json, requests, sqlite3
+from ddgs import DDGS
 from datetime import datetime
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -49,28 +50,14 @@ class ToolRegistry:
 
     # ── WEB SEARCH ───────────────────────────────────────────
     def _tool_web_search(self, query: str, max_results: int = 5) -> ToolResult:
-        """DuckDuckGo instant answers + HTML search."""
+        """DuckDuckGo search via ddgs library."""
         try:
-            headers = {"User-Agent": "Mozilla/5.0 (compatible; BlomsterBot/1.0)"}
-            # DDG HTML
-            r = requests.get(
-                "https://html.duckduckgo.com/html/",
-                params={"q": query},
-                headers=headers,
-                timeout=12,
-            )
-            soup = BeautifulSoup(r.text, "lxml")
-            results = []
-            for a in soup.select(".result__a")[:max_results]:
-                href = a.get("href", "")
-                title = a.get_text(strip=True)
-                # extract snippet
-                parent = a.find_parent(class_="result")
-                snippet = ""
-                if parent:
-                    snip_el = parent.select_one(".result__snippet")
-                    snippet = snip_el.get_text(strip=True) if snip_el else ""
-                results.append({"title": title, "url": href, "snippet": snippet})
+            raw = list(DDGS().text(query, max_results=max_results))
+            results = [
+                {"title": r.get("title", ""), "url": r.get("href", ""),
+                 "snippet": r.get("body", "")}
+                for r in raw
+            ]
             return ToolResult(True, {"query": query, "results": results})
         except Exception as e:
             return ToolResult(False, error=str(e))
@@ -79,7 +66,7 @@ class ToolRegistry:
     def _tool_web_fetch(self, url: str, max_chars: int = 4000) -> ToolResult:
         """Загрузить страницу и вернуть чистый текст."""
         try:
-            r = requests.get(url, timeout=15,
+            r = requests.get(url, timeout=15, verify=False,
                              headers={"User-Agent": "Mozilla/5.0"})
             soup = BeautifulSoup(r.text, "lxml")
             # Remove scripts/styles
