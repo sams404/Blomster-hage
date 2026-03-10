@@ -77,12 +77,14 @@ class IrisIntelligence(BaseAgent):
         btc = self.tools.call("crypto_price", coin_id="bitcoin")
         eth = self.tools.call("crypto_price", coin_id="ethereum")
 
+        btc_data = btc.data or {}
+        eth_data = eth.data or {}
         context = f"""
 Статистика системы:
 {json.dumps(stats, ensure_ascii=False)}
 
-BTC: ${btc.data.get('price_usd', 0):,.0f} ({btc.data.get('change_24h', 0):+.1f}%)
-ETH: ${eth.data.get('price_usd', 0):,.0f} ({eth.data.get('change_24h', 0):+.1f}%)
+BTC: ${btc_data.get('price_usd', 0):,.0f} ({btc_data.get('change_24h', 0):+.1f}%)
+ETH: ${eth_data.get('price_usd', 0):,.0f} ({eth_data.get('change_24h', 0):+.1f}%)
 
 Свежие новости:
 {news[:1000]}

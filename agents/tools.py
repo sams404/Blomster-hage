@@ -78,28 +78,47 @@ class ToolRegistry:
             return ToolResult(False, error=str(e))
 
     # ── CRYPTO PRICE ─────────────────────────────────────────
+    _crypto_cache: dict = {}
+    _crypto_cache_ts: float = 0
+
     def _tool_crypto_price(self, coin_id: str) -> ToolResult:
-        """CoinGecko бесплатное API."""
-        try:
-            r = requests.get(
-                f"https://api.coingecko.com/api/v3/coins/{coin_id}"
-                "?localization=false&tickers=false&market_data=true"
-                "&community_data=false&developer_data=false",
-                timeout=12,
-            )
-            d  = r.json()
-            md = d.get("market_data", {})
-            return ToolResult(True, {
-                "coin":       d["symbol"].upper(),
-                "name":       d["name"],
-                "price_usd":  md.get("current_price", {}).get("usd", 0),
-                "change_24h": md.get("price_change_percentage_24h", 0),
-                "change_7d":  md.get("price_change_percentage_7d", 0),
-                "volume_24h": md.get("total_volume", {}).get("usd", 0),
-                "ath":        md.get("ath", {}).get("usd", 0),
-            })
-        except Exception as e:
-            return ToolResult(False, error=str(e))
+        """CoinGecko — все монеты одним запросом, кэш 5 минут."""
+        import time
+        COINS = "bitcoin,ethereum,solana,cardano"
+        NAMES = {"bitcoin": ("BTC","Bitcoin"), "ethereum": ("ETH","Ethereum"),
+                 "solana":  ("SOL","Solana"),  "cardano":  ("ADA","Cardano")}
+        now = time.time()
+        # Обновляем кэш раз в 5 минут
+        if now - ToolRegistry._crypto_cache_ts > 300 or not ToolRegistry._crypto_cache:
+            try:
+                r = requests.get(
+                    "https://api.coingecko.com/api/v3/simple/price",
+                    params={"ids": COINS, "vs_currencies": "usd",
+                            "include_24hr_change": "true",
+                            "include_7d_change":   "true",
+                            "include_24hr_vol":    "true"},
+                    timeout=12,
+                )
+                data = r.json()
+                if "status" in data:  # rate limit error
+                    return ToolResult(False, error=data["status"].get("error_message","rate limit"))
+                ToolRegistry._crypto_cache = data
+                ToolRegistry._crypto_cache_ts = now
+            except Exception as e:
+                return ToolResult(False, error=str(e))
+        d = ToolRegistry._crypto_cache.get(coin_id, {})
+        if not d:
+            return ToolResult(False, error=f"No data for {coin_id}")
+        sym, name = NAMES.get(coin_id, (coin_id.upper(), coin_id.title()))
+        return ToolResult(True, {
+            "coin":       sym,
+            "name":       name,
+            "price_usd":  d.get("usd", 0),
+            "change_24h": d.get("usd_24h_change", 0),
+            "change_7d":  d.get("usd_7d_change", 0),
+            "volume_24h": d.get("usd_24h_vol", 0),
+            "ath":        0,
+        })
 
     # ── SAVE VAULT (Obsidian) ────────────────────────────────
     def _tool_save_vault(self, folder: str, title: str, content: str,
