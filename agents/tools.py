@@ -133,20 +133,15 @@ agent: auto
     # ── SEND EMAIL ───────────────────────────────────────────
     def _tool_send_email(self, to: str, subject: str, body: str,
                           html: bool = True) -> ToolResult:
-        """Resend API."""
+        """Resend API. В тест-режиме шлёт только на OWNER_EMAIL."""
         if not RESEND_KEY:
             return ToolResult(False, error="RESEND_API_KEY not set")
+        # В тест-режиме Resend разрешает только аккаунт-email → перенаправляем
+        owner = os.environ.get("OWNER_EMAIL", to)
+        actual_to = owner  # всегда шлём владельцу пока домен не верифицирован
         try:
-            payload = {
-                "from":    FROM_EMAIL,
-                "to":      to,
-                "subject": subject,
-            }
-            if html:
-                payload["html"] = body
-            else:
-                payload["text"] = body
-
+            payload = {"from": FROM_EMAIL, "to": actual_to, "subject": subject}
+            payload["html" if html else "text"] = body
             r = requests.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {RESEND_KEY}",
@@ -154,7 +149,7 @@ agent: auto
                 json=payload, timeout=15,
             )
             return ToolResult(r.status_code in (200, 201),
-                              data={"id": r.json().get("id")},
+                              data={"id": r.json().get("id"), "to": actual_to},
                               error="" if r.ok else r.text[:200])
         except Exception as e:
             return ToolResult(False, error=str(e))
