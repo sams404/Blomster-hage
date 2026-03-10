@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blomster Hage · Intelligence Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#05070a;--s1:#090d12;--s2:#0e1318;--s3:#131a22;
+  --border:rgba(120,180,255,0.07);--border2:rgba(120,180,255,0.14);
+  --text:#d8e8f5;--muted:rgba(216,232,245,0.38);--dim:rgba(216,232,245,0.16);
+  --gold:#c9a96e;--gold-dim:rgba(201,169,110,0.1);
+  --cyan:#4fc3f7;--cyan-dim:rgba(79,195,247,0.08);
+  --green:#5cb87a;--green-dim:rgba(92,184,122,0.08);
+  --red:#c96e6e;--red-dim:rgba(201,110,110,0.08);
+  --purple:#9b7ec9;--purple-dim:rgba(155,126,201,0.08);
+  --orange:#c9956e;--orange-dim:rgba(201,149,110,0.08);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:12px;line-height:1.55;overflow-x:hidden;}
+::selection{background:rgba(79,195,247,.18);color:var(--text);}
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse 60% 40% at 20% 10%,rgba(79,195,247,0.03) 0%,transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 80%,rgba(201,169,110,0.03) 0%,transparent 60%);
+  pointer-events:none;z-index:0;}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:200px 1fr;min-height:100vh;position:relative;z-index:1;}
+
+/* SIDEBAR */
+.sidebar{background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sb-top{padding:20px 16px;border-bottom:1px solid var(--border);}
+.sb-logo{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;letter-spacing:.04em;}
+.sb-logo em{color:var(--cyan);font-style:italic;}
+.sb-badge-row{display:flex;align-items:center;gap:6px;margin-top:6px;}
+.sb-pill{font-size:8px;letter-spacing:.16em;padding:2px 8px;border:1px solid rgba(79,195,247,.2);color:var(--cyan);text-transform:uppercase;}
+.sb-online{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.sb-nav{padding:12px 0;flex:1;}
+.sb-group{margin-bottom:4px;}
+.sb-group-label{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);padding:8px 16px 4px;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 16px;color:var(--muted);font-size:10px;letter-spacing:.06em;cursor:pointer;transition:all .18s;border-left:2px solid transparent;position:relative;}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.02);}
+.sb-item.active{color:var(--cyan);border-left-color:var(--cyan);background:var(--cyan-dim);}
+.sb-item .ic{font-size:13px;width:18px;text-align:center;flex-shrink:0;}
+.sb-count{margin-left:auto;font-size:8px;padding:1px 6px;border-radius:8px;background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(79,195,247,.2);}
+.sb-count.hot{background:rgba(201,110,110,.12);color:var(--red);border-color:rgba(201,110,110,.2);}
+.sb-bottom{padding:12px 16px;border-top:1px solid var(--border);}
+.sb-status{font-size:9px;color:var(--dim);display:flex;align-items:center;gap:6px;letter-spacing:.08em;}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(5,7,10,0.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;}
+.tb-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:300;}
+.tb-title em{color:var(--cyan);font-style:italic;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.tb-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;padding:6px 14px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.tb-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tb-btn.primary{background:var(--cyan-dim);border-color:rgba(79,195,247,.3);color:var(--cyan);}
+.tb-btn.primary:hover{background:rgba(79,195,247,.15);}
+
+/* CONTENT */
+.content{padding:24px 28px;}
+.panel{display:none;}.panel.active{display:block;}
+
+/* SECTION HEADERS */
+.sec-tag{font-size:8px;letter-spacing:.26em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;margin-bottom:20px;line-height:1.1;}
+.sec-title em{font-style:italic;color:var(--muted);}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);padding:18px 20px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.card-ttl{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.card-act{background:none;border:none;color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;cursor:pointer;text-transform:uppercase;}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:16px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:16px;}
+
+/* STAT CARDS */
+.kpi{background:var(--s1);border:1px solid var(--border);padding:16px 18px;position:relative;overflow:hidden;}
+.kpi::after{content:attr(data-i);position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:24px;opacity:.1;}
+.kpi-l{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+.kpi-n{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;line-height:1;}
+.kpi-s{font-size:9px;margin-top:5px;display:flex;align-items:center;gap:5px;}
+.up{color:var(--green);}.down{color:var(--red);}.neutral{color:var(--muted);}
+
+/* TREND SEARCH */
+.trend-search-bar{display:flex;gap:0;margin-bottom:16px;}
+.ts-input{flex:1;background:var(--s2);border:1px solid var(--border2);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:12px 16px;outline:none;transition:border-color .2s;}
+.ts-input:focus{border-color:var(--cyan);}
+.ts-input::placeholder{color:var(--dim);}
+.ts-btn{background:var(--cyan-dim);border:1px solid rgba(79,195,247,.25);border-left:none;color:var(--cyan);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;padding:12px 20px;cursor:pointer;transition:all .2s;text-transform:uppercase;white-space:nowrap;}
+.ts-btn:hover{background:rgba(79,195,247,.15);}
+.ts-btn.loading{opacity:.6;pointer-events:none;}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.fpill{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:5px 12px;cursor:pointer;transition:all .18s;text-transform:uppercase;}
+.fpill:hover{border-color:var(--text);color:var(--text);}
+.fpill.on{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim);}
+
+/* TREND CARDS */
+.trend-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:20px;}
+.trend-card{background:var(--s1);border:1px solid var(--border);padding:16px 18px;transition:border-color .25s;cursor:pointer;position:relative;overflow:hidden;}
+.trend-card:hover{border-color:var(--border2);}
+.trend-card.hot{border-color:rgba(201,110,110,.2);}
+.trend-card.hot::before{content:'🔥';position:absolute;top:10px;right:12px;font-size:13px;}
+.trend-card.rising{border-color:rgba(79,195,247,.2);}
+.trend-card.rising::before{content:'📈';position:absolute;top:10px;right:12px;font-size:13px;}
+.tc-cat{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:8px;}
+.tc-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;margin-bottom:6px;line-height:1.2;}
+.tc-desc{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
+.tc-meta{display:flex;gap:10px;font-size:9px;color:var(--dim);}
+.tc-score{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold);}
+.tc-demand{font-size:9px;color:var(--muted);margin-top:2px;}
+.bar-mini{height:2px;background:var(--s2);margin-top:8px;}
+.bar-mini-fill{height:100%;transition:width .8s ease;}
+
+/* AI ANALYSIS BOX */
+.ai-box{background:var(--s2);border:1px solid rgba(79,195,247,.15);padding:18px 20px;margin-bottom:16px;position:relative;}
+.ai-box::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--cyan),transparent);}
+.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.ai-label{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);}
+.ai-spinner-sm{width:10px;height:10px;border:1.5px solid rgba(79,195,247,.2);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-text{font-size:11px;color:var(--muted);line-height:1.75;}
+.ai-text strong{color:var(--text);}
+.typing-cursor{display:inline-block;width:2px;height:12px;background:var(--cyan);margin-left:2px;animation:blink .8s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* FREELANCE TASKS */
+.task-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.task-search{flex:1;min-width:180px;background:var(--s2);border:1px solid var(--border2);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;outline:none;transition:border-color .2s;}
+.task-search:focus{border-color:var(--cyan);}
+.task-search::placeholder{color:var(--dim);}
+.task-sel{background:var(--s2);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:9px 10px;outline:none;cursor:pointer;}
+.refresh-btn{background:var(--cyan-dim);border:1px solid rgba(79,195,247,.2);color:var(--cyan);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;padding:9px 16px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.refresh-btn:hover{background:rgba(79,195,247,.15);}
+.refresh-btn.spinning .btn-icon{display:inline-block;animation:spin .6s linear infinite;}
+.platform-bar{display:flex;gap:2px;margin-bottom:14px;}
+.pbar-tab{flex:1;background:var(--s1);border:1px solid var(--border);padding:8px;text-align:center;cursor:pointer;transition:all .18s;font-size:10px;color:var(--muted);letter-spacing:.06em;}
+.pbar-tab:hover{color:var(--text);}
+.pbar-tab.on{background:var(--cyan-dim);border-color:rgba(79,195,247,.25);color:var(--cyan);}
+.pbar-tab .cnt{font-family:'Cormorant Garamond',serif;font-size:18px;display:block;line-height:1;}
+.task-list{display:flex;flex-direction:column;gap:2px;}
+.task-item{background:var(--s1);border:1px solid var(--border);padding:14px 16px;transition:all .2s;cursor:pointer;position:relative;}
+.task-item:hover{border-color:var(--border2);background:var(--s2);}
+.task-item.selected{border-color:rgba(79,195,247,.35);background:var(--cyan-dim);}
+.task-item.applied{border-color:rgba(92,184,122,.25);background:var(--green-dim);}
+.task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;}
+.task-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:300;line-height:1.2;flex:1;}
+.task-budget{font-size:11px;color:var(--gold);white-space:nowrap;flex-shrink:0;}
+.task-platform{font-size:11px;flex-shrink:0;}
+.task-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+.task-tag{font-size:8px;letter-spacing:.1em;padding:2px 8px;border:1px solid var(--border);color:var(--dim);text-transform:uppercase;}
+.task-tag.match{border-color:rgba(79,195,247,.25);color:var(--cyan);background:var(--cyan-dim);}
+.task-tag.hot{border-color:rgba(201,110,110,.2);color:var(--red);background:var(--red-dim);}
+.task-desc{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:8px;}
+.task-footer{display:flex;align-items:center;justify-content:space-between;}
+.task-meta{font-size:9px;color:var(--dim);display:flex;gap:12px;}
+.task-score-badge{font-size:9px;padding:2px 10px;border:1px solid;letter-spacing:.1em;text-transform:uppercase;}
+.score-high{color:var(--green);border-color:rgba(92,184,122,.3);background:var(--green-dim);}
+.score-mid{color:var(--gold);border-color:rgba(201,169,110,.25);background:var(--gold-dim);}
+.score-low{color:var(--muted);border-color:var(--border);}
+.task-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.ta-btn{flex:1;padding:7px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.ta-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.ta-btn.primary{background:var(--cyan-dim);border-color:rgba(79,195,247,.3);color:var(--cyan);}
+.ta-btn.primary:hover{background:rgba(79,195,247,.15);}
+.ta-btn.success{background:var(--green-dim);border-color:rgba(92,184,122,.3);color:var(--green);}
+
+/* PITCH COMPOSER */
+.pitch-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(16px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+.pitch-overlay.open{opacity:1;pointer-events:all;}
+.pitch-box{background:var(--s2);border:1px solid var(--border2);padding:36px;max-width:600px;width:95%;position:relative;max-height:90vh;overflow-y:auto;}
+.pitch-close{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;transition:color .2s;}
+.pitch-close:hover{color:var(--text);}
+.pitch-task-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;margin-bottom:4px;}
+.pitch-task-meta{font-size:9px;color:var(--cyan);letter-spacing:.16em;text-transform:uppercase;margin-bottom:20px;}
+.pitch-section{margin-bottom:14px;}
+.pitch-label{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:block;}
+.pitch-textarea{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:12px;outline:none;min-height:140px;resize:vertical;line-height:1.7;transition:border-color .2s;}
+.pitch-textarea:focus{border-color:var(--cyan);}
+.pitch-input{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:10px 12px;outline:none;transition:border-color .2s;}
+.pitch-input:focus{border-color:var(--cyan);}
+.pitch-footer{display:flex;gap:10px;margin-top:20px;}
+.pitch-btn{flex:1;padding:11px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.pitch-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.pitch-btn.send{background:var(--cyan-dim);border-color:rgba(79,195,247,.35);color:var(--cyan);}
+.pitch-btn.send:hover{background:rgba(79,195,247,.15);}
+.generating-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s1);border:1px solid rgba(79,195,247,.15);margin-bottom:8px;font-size:10px;color:var(--cyan);}
+
+/* PIPELINE */
+.pipeline{display:flex;gap:2px;margin-bottom:16px;}
+.pipe-col{flex:1;background:var(--s1);border:1px solid var(--border);padding:12px;}
+.pipe-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.pipe-title{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.pipe-num{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text);}
+.pipe-item{background:var(--s2);border:1px solid var(--border);padding:8px 10px;margin-bottom:4px;font-size:10px;color:var(--muted);cursor:pointer;transition:border-color .18s;}
+.pipe-item:hover{border-color:var(--border2);color:var(--text);}
+.pipe-item .pi-name{color:var(--text);margin-bottom:2px;font-size:11px;}
+.pipe-item .pi-platform{font-size:9px;color:var(--dim);}
+.pipe-item .pi-budget{font-size:10px;color:var(--gold);}
+
+/* TOASTER */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s2);border:1px solid var(--border2);padding:12px 18px;font-size:11px;color:var(--text);z-index:999;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.25,.46,.45,.94);display:flex;align-items:center;gap:10px;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(79,195,247,.15);border-radius:2px;}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);padding:0 0 8px;text-align:left;border-bottom:1px solid var(--border);font-weight:300;}
+.tbl td{padding:9px 0;border-bottom:1px solid var(--border);font-size:10px;color:var(--muted);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:hover td{color:var(--text);}
+
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .g2,.g3,.g4{grid-template-columns:1fr 1fr;}
+  .trend-grid{grid-template-columns:1fr 1fr;}
+  .content{padding:16px;}
+  .topbar{padding:12px 16px;}
+}
+@media(max-width:580px){
+  .g2,.g3,.g4,.trend-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-logo">Blomster <em>Intel</em></div>
+    <div class="sb-badge-row">
+      <div class="sb-online"></div>
+      <span class="sb-pill">Live Feed</span>
+    </div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-group">
+      <div class="sb-group-label">Разведка</div>
+      <div class="sb-item active" onclick="show('trends',this)"><span class="ic">🔭</span>Тренды <span class="sb-count" id="sc-trends">24</span></div>
+      <div class="sb-item" onclick="show('tasks',this)"><span class="ic">🎯</span>Задачи <span class="sb-count hot" id="sc-tasks">47</span></div>
+      <div class="sb-item" onclick="show('pipeline',this)"><span class="ic">🌊</span>Pipeline <span class="sb-count">12</span></div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">Анализ</div>
+      <div class="sb-item" onclick="show('ai',this)"><span class="ic">🧠</span>AI Анализ</div>
+      <div class="sb-item" onclick="show('niches',this)"><span class="ic">🗺</span>Ниши</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">Действия</div>
+      <div class="sb-item" onclick="show('pitches',this)"><span class="ic">✉️</span>Питчи <span class="sb-count">5</span></div>
+      <div class="sb-item" onclick="show('stats',this)"><span class="ic">📊</span>Статистика</div>
+    </div>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-status"><div class="sb-online"></div> Обновлено 2 мин назад</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div style="display:flex;flex-direction:column;min-height:100vh;">
+
+<div class="topbar">
+  <div class="tb-title" id="topbar-title">Тренды <em>/ Trend Intelligence</em></div>
+  <div class="tb-right">
+    <button class="tb-btn" onclick="refreshAll()">⟳ Обновить</button>
+    <button class="tb-btn primary" onclick="show('tasks',document.querySelector('[onclick*=tasks]'))">🎯 Найти задачи</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ══ TRENDS ══ -->
+<div class="panel active" id="panel-trends">
+  <div class="sec-tag">🔭 Trend Intelligence · Real-time</div>
+  <h2 class="sec-title">Что ищут прямо <em>сейчас.</em></h2>
+
+  <div class="trend-search-bar">
+    <input class="ts-input" id="trend-q" placeholder="Искать тренд: AI automation, Make.com, NOK forex, freelance Norway..." onkeydown="if(event.key==='Enter')searchTrends()">
+    <button class="ts-btn" id="trend-btn" onclick="searchTrends()">🔭 Анализировать</button>
+  </div>
+
+  <div class="filter-pills">
+    <button class="fpill on" onclick="filterTrends('all',this)">Все</button>
+    <button class="fpill" onclick="filterTrends('ai',this)">🤖 AI / LLM</button>
+    <button class="fpill" onclick="filterTrends('automation',this)">⚙️ Автоматизация</button>
+    <button class="fpill" onclick="filterTrends('freelance',this)">🤝 Фриланс</button>
+    <button class="fpill" onclick="filterTrends('crypto',this)">💹 Крипто</button>
+    <button class="fpill" onclick="filterTrends('norway',this)">🇳🇴 Норвегия</button>
+    <button class="fpill" onclick="filterTrends('content',this)">✍️ Контент</button>
+  </div>
+
+  <div class="ai-box" id="trend-ai-box">
+    <div class="ai-header"><span class="ai-label">🧠 AI Анализ трендов</span><div class="ai-spinner-sm" id="trend-spinner" style="display:none"></div></div>
+    <div class="ai-text" id="trend-ai-text">Введи запрос выше или нажми на карточку тренда чтобы получить AI-анализ рыночного спроса, конкуренции и конкретных возможностей для заработка в Норвегии.</div>
+  </div>
+
+  <div class="trend-grid" id="trend-grid"></div>
+</div>
+
+<!-- ══ TASKS ══ -->
+<div class="panel" id="panel-tasks">
+  <div class="sec-tag">🎯 Freelance Task Hunter</div>
+  <h2 class="sec-title">Задачи ждут. <em>Агент нашёл.</em></h2>
+
+  <div class="g4">
+    <div class="kpi" data-i="📋"><div class="kpi-l">Найдено сегодня</div><div class="kpi-n" id="k-found">47</div><div class="kpi-s up">↑ +12 за час</div></div>
+    <div class="kpi" data-i="⭐"><div class="kpi-l">Высокий match</div><div class="kpi-n" id="k-match">14</div><div class="kpi-s neutral">Score ≥ 80</div></div>
+    <div class="kpi" data-i="💰"><div class="kpi-l">Средний бюджет</div><div class="kpi-n">kr 4 200</div><div class="kpi-s up">↑ vs прошлая нед.</div></div>
+    <div class="kpi" data-i="⚡"><div class="kpi-l">Новые (срочные)</div><div class="kpi-n" id="k-urgent">6</div><div class="kpi-s" style="color:var(--red)">🔥 Срочные</div></div>
+  </div>
+
+  <div class="platform-bar">
+    <div class="pbar-tab on" onclick="filterPlatform('all',this)"><span class="cnt">47</span>Все платформы</div>
+    <div class="pbar-tab" onclick="filterPlatform('upwork',this)"><span class="cnt" id="cnt-upwork">18</span>Upwork</div>
+    <div class="pbar-tab" onclick="filterPlatform('fiverr',this)"><span class="cnt" id="cnt-fiverr">12</span>Fiverr</div>
+    <div class="pbar-tab" onclick="filterPlatform('freelanceru',this)"><span class="cnt" id="cnt-freelanceru">9</span>Freelancer.ru</div>
+    <div class="pbar-tab" onclick="filterPlatform('kwork',this)"><span class="cnt" id="cnt-kwork">8</span>Kwork</div>
+  </div>
+
+  <div class="task-toolbar">
+    <input class="task-search" id="task-search" placeholder="Фильтр: Python, SEO, Telegram bot, автоматизация..." oninput="filterTasks()">
+    <select class="task-sel" id="task-budget" onchange="filterTasks()">
+      <option value="">Любой бюджет</option>
+      <option value="1000">от kr 1 000</option>
+      <option value="3000">от kr 3 000</option>
+      <option value="5000">от kr 5 000</option>
+      <option value="10000">от kr 10 000</option>
+    </select>
+    <select class="task-sel" id="task-sort" onchange="filterTasks()">
+      <option value="score">По match score</option>
+      <option value="budget">По бюджету</option>
+      <option value="date">По дате</option>
+    </select>
+    <button class="refresh-btn" onclick="refreshTasks(this)"><span class="btn-icon">⟳</span> Обновить</button>
+  </div>
+
+  <div class="task-list" id="task-list"></div>
+</div>
+
+<!-- ══ PIPELINE ══ -->
+<div class="panel" id="panel-pipeline">
+  <div class="sec-tag">🌊 Outreach Pipeline</div>
+  <h2 class="sec-title">Клиенты в <em>работе.</em></h2>
+  <div class="g4">
+    <div class="kpi" data-i="📤"><div class="kpi-l">Отправлено</div><div class="kpi-n">23</div><div class="kpi-s neutral">питчей</div></div>
+    <div class="kpi" data-i="👁"><div class="kpi-l">Просмотрено</div><div class="kpi-n">17</div><div class="kpi-s up">74% open rate</div></div>
+    <div class="kpi" data-i="💬"><div class="kpi-l">Ответили</div><div class="kpi-n">8</div><div class="kpi-s up">35% reply rate</div></div>
+    <div class="kpi" data-i="✅"><div class="kpi-l">Закрыто</div><div class="kpi-n">3</div><div class="kpi-s" style="color:var(--gold)">kr 22 500</div></div>
+  </div>
+  <div class="pipeline" id="pipeline-board"></div>
+</div>
+
+<!-- ══ AI ANALYSIS ══ -->
+<div class="panel" id="panel-ai">
+  <div class="sec-tag">🧠 AI Market Intelligence</div>
+  <h2 class="sec-title">Глубокий анализ <em>по запросу.</em></h2>
+  <div class="g2" style="margin-bottom:16px">
+    <div>
+      <div class="trend-search-bar" style="margin-bottom:10px">
+        <input class="ts-input" id="ai-q" placeholder="Задай вопрос: какие ниши растут в Норвегии?">
+        <button class="ts-btn" onclick="runAIAnalysis()">🧠 Анализ</button>
+      </div>
+      <div class="filter-pills">
+        <button class="fpill" onclick="setAIQ('Какие AI-навыки самые востребованные на фрилансе в 2026?',this)">AI навыки 2026</button>
+        <button class="fpill" onclick="setAIQ('Где искать клиентов Make.com автоматизации в Норвегии?',this)">Make.com клиенты</button>
+        <button class="fpill" onclick="setAIQ('Какой бюджет у типичного Upwork клиента на автоматизацию?',this)">Бюджеты Upwork</button>
+        <button class="fpill" onclick="setAIQ('Как выделиться среди других фрилансеров в нише AI?',this)">Дифференциация</button>
+        <button class="fpill" onclick="setAIQ('Лучшие платформы для продажи AI-автоматизаций в Скандинавии?',this)">Норвегия + AI</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-ttl">📊 Топ запросы этой недели</span></div>
+      <table class="tbl">
+        <thead><tr><th>Запрос</th><th>Тренд</th><th>Конкур.</th></tr></thead>
+        <tbody>
+          <tr><td>Make.com автоматизация</td><td class="up">↑ +34%</td><td style="color:var(--gold)">Средняя</td></tr>
+          <tr><td>AI content writer</td><td class="up">↑ +28%</td><td class="up">Низкая</td></tr>
+          <tr><td>Telegram bot development</td><td class="up">↑ +41%</td><td style="color:var(--gold)">Средняя</td></tr>
+          <tr><td>n8n workflow</td><td class="up">↑ +67%</td><td class="up">Низкая</td></tr>
+          <tr><td>Crypto trading bot</td><td class="up">↑ +22%</td><td class="down">Высокая</td></tr>
+          <tr><td>SEO automation</td><td class="up">↑ +19%</td><td style="color:var(--gold)">Средняя</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="ai-box" id="ai-analysis-box" style="min-height:200px">
+    <div class="ai-header"><span class="ai-label">🧠 Результат анализа</span><div class="ai-spinner-sm" id="ai-spinner" style="display:none"></div></div>
+    <div class="ai-text" id="ai-result-text">Выбери готовый запрос или введи свой вопрос о рынке, нишах и возможностях. AI проанализирует данные фриланс-платформ и даст конкретные рекомендации.</div>
+  </div>
+</div>
+
+<!-- ══ NICHES ══ -->
+<div class="panel" id="panel-niches">
+  <div class="sec-tag">🗺 Ниши · Карта возможностей</div>
+  <h2 class="sec-title">Где деньги <em>прямо сейчас.</em></h2>
+  <div class="trend-grid" id="niche-grid"></div>
+</div>
+
+<!-- ══ PITCHES ══ -->
+<div class="panel" id="panel-pitches">
+  <div class="sec-tag">✉️ Sent Pitches</div>
+  <h2 class="sec-title">Отправленные <em>питчи.</em></h2>
+  <div class="card">
+    <div class="card-hdr"><span class="card-ttl">История питчей</span><span style="font-size:10px;color:var(--green)">5 отправлено · 2 ответа</span></div>
+    <table class="tbl">
+      <thead><tr><th>Задача</th><th>Платформа</th><th>Бюджет</th><th>Статус</th><th>Дата</th><th></th></tr></thead>
+      <tbody id="pitches-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ STATS ══ -->
+<div class="panel" id="panel-stats">
+  <div class="sec-tag">📊 Performance Stats</div>
+  <h2 class="sec-title">Твои <em>результаты.</em></h2>
+  <div class="g4">
+    <div class="kpi" data-i="👁"><div class="kpi-l">Задач просмотрено</div><div class="kpi-n">312</div><div class="kpi-s neutral">за 30 дней</div></div>
+    <div class="kpi" data-i="✉️"><div class="kpi-l">Питчей отправлено</div><div class="kpi-n">23</div><div class="kpi-s neutral">7.4% конверсия</div></div>
+    <div class="kpi" data-i="💬"><div class="kpi-l">Ответов получено</div><div class="kpi-n">8</div><div class="kpi-s up">35% reply rate</div></div>
+    <div class="kpi" data-i="💰"><div class="kpi-l">Заработано</div><div class="kpi-n">kr 22.5K</div><div class="kpi-s up">↑ +34% MoM</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><span class="card-ttl">Топ платформы по конверсии</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px">Upwork</span><span style="font-size:10px;color:var(--green)">4.2%</span></div><div style="background:var(--s2);height:3px"><div style="height:100%;background:var(--cyan);width:42%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px">Kwork</span><span style="font-size:10px;color:var(--green)">8.1%</span></div><div style="background:var(--s2);height:3px"><div style="height:100%;background:var(--green);width:81%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px">Fiverr</span><span style="font-size:10px;color:var(--gold)">2.8%</span></div><div style="background:var(--s2);height:3px"><div style="height:100%;background:var(--gold);width:28%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px">Freelancer.ru</span><span style="font-size:10px;color:var(--gold)">3.1%</span></div><div style="background:var(--s2);height:3px"><div style="height:100%;background:var(--purple);width:31%"></div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-ttl">Топ ниши по доходу</span></div>
+      <table class="tbl">
+        <thead><tr><th>Ниша</th><th>Задач</th><th>Доход</th></tr></thead>
+        <tbody>
+          <tr><td>⚙️ Автоматизация</td><td>8</td><td style="color:var(--green)">kr 12 400</td></tr>
+          <tr><td>🤖 AI интеграции</td><td>4</td><td style="color:var(--green)">kr 6 800</td></tr>
+          <tr><td>✍️ Контент / SEO</td><td>7</td><td style="color:var(--gold)">kr 2 100</td></tr>
+          <tr><td>📊 Аналитика</td><td>2</td><td style="color:var(--gold)">kr 1 200</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- PITCH MODAL -->
+<div class="pitch-overlay" id="pitch-overlay">
+  <div class="pitch-box">
+    <button class="pitch-close" onclick="closePitch()">×</button>
+    <div class="pitch-task-title" id="pitch-task-title"></div>
+    <div class="pitch-task-meta" id="pitch-task-meta"></div>
+    <div class="generating-bar" id="gen-bar" style="display:none">
+      <div class="ai-spinner-sm"></div>
+      <span>AI генерирует персональный питч...</span>
+    </div>
+    <div class="pitch-section">
+      <span class="pitch-label">Питч / Cover Letter</span>
+      <textarea class="pitch-textarea" id="pitch-text" placeholder="Питч будет сгенерирован автоматически..."></textarea>
+    </div>
+    <div class="pitch-section">
+      <span class="pitch-label">Предлагаемая ставка</span>
+      <input class="pitch-input" id="pitch-rate" placeholder="kr 5 000 / фиксированная или kr 800 / час">
+    </div>
+    <div class="pitch-section">
+      <span class="pitch-label">Срок выполнения</span>
+      <input class="pitch-input" id="pitch-deadline" placeholder="3–5 рабочих дней">
+    </div>
+    <div class="pitch-footer">
+      <button class="pitch-btn" onclick="regeneratePitch()">⟳ Перегенерировать</button>
+      <button class="pitch-btn" onclick="copyPitch()">📋 Скопировать</button>
+      <button class="pitch-btn send" onclick="markApplied()">✓ Отметить отправленным</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toast-icon">🌸</span><span id="toast-text"></span></div>
+
+<script>
+// ── DATA ──
+const TRENDS = [
+  {id:'t1',cat:'🤖 AI / LLM',title:'n8n + AI Workflows',desc:'Взрывной рост спроса на связку n8n с локальными LLM. Компании хотят автоматизацию без облаков.',score:94,demand:'Очень высокий',change:'+67%',type:'rising',filter:'ai automation',budget:'kr 8 000–25 000',fill:94},
+  {id:'t2',cat:'⚙️ Автоматизация',title:'Make.com Enterprise',desc:'Крупный бизнес переходит на Make.com. Нужны специалисты для сложных сценариев.',score:88,demand:'Высокий',change:'+34%',type:'rising',filter:'automation',budget:'kr 5 000–15 000',fill:88},
+  {id:'t3',cat:'🤖 AI',title:'RAG системы для бизнеса',desc:'Компании хотят свои knowledge bases на базе GPT-4. Нишевый но очень высокооплачиваемый.',score:91,demand:'Высокий',change:'+52%',type:'hot',filter:'ai',budget:'kr 15 000–50 000',fill:91},
+  {id:'t4',cat:'💬 Telegram / Discord',title:'AI Боты для сообществ',desc:'Telegram боты с AI для автоответов, модерации, продаж. Массовый спрос от малого бизнеса.',score:79,demand:'Высокий',change:'+41%',type:'rising',filter:'automation freelance',budget:'kr 2 000–8 000',fill:79},
+  {id:'t5',cat:'🇳🇴 Норвегия',title:'Automatisering for SMB',desc:'Малый норвежский бизнес активно ищет автоматизаторов. Конкуренция низкая, цены высокие.',score:85,demand:'Высокий',change:'+29%',type:'hot',filter:'norway automation freelance',budget:'kr 10 000–30 000',fill:85},
+  {id:'t6',cat:'✍️ Контент',title:'AI SEO + Link Building',desc:'Автоматизированный SEO контент с AI набирает обороты. Агентства платят хорошо.',score:72,demand:'Средний',change:'+19%',type:'rising',filter:'content',budget:'kr 3 000–10 000',fill:72},
+  {id:'t7',cat:'💹 Крипто',title:'DeFi Dashboard Tools',desc:'Кастомные дашборды для DeFi трейдеров. NOK-пары в Норвегии — отдельная ниша.',score:68,demand:'Средний',change:'+22%',type:'',filter:'crypto norway',budget:'kr 5 000–20 000',fill:68},
+  {id:'t8',cat:'⚙️ Автоматизация',title:'Zapier → Make.com Migration',desc:'Многие уходят с Zapier. Нужна миграция сценариев. Быстрые деньги для тех кто умеет.',score:76,demand:'Высокий',change:'+38%',type:'hot',filter:'automation',budget:'kr 2 000–6 000',fill:76},
+  {id:'t9',cat:'🤝 Фриланс',title:'Outreach Automation',desc:'Бизнес хочет автоматический cold outreach через LinkedIn + email. Постоянный спрос.',score:81,demand:'Высокий',change:'+26%',type:'rising',filter:'freelance automation',budget:'kr 4 000–12 000',fill:81},
+];
+
+const TASKS = [
+  {id:1,title:'Настройка Make.com сценария для CRM + email рассылки',platform:'upwork',budget:'kr 3 800',budgetRaw:3800,desc:'Нужен специалист Make.com для интеграции HubSpot → Mailchimp → Slack. 5–7 шагов, документация обязательна.',tags:['Make.com','CRM','API'],matchTags:['Make.com'],score:92,date:'2 часа назад',urgent:true,filter:'upwork'},
+  {id:2,title:'Telegram бот с AI для интернет-магазина (автоответы)',platform:'kwork',budget:'kr 2 200',budgetRaw:2200,desc:'Бот для ответов на вопросы покупателей, проверка наличия товара, оформление заказа. Python или Node.js.',tags:['Telegram','Python','AI','Bot'],matchTags:['AI','Bot'],score:88,date:'4 часа назад',urgent:false,filter:'kwork'},
+  {id:3,title:'n8n workflow: парсинг вакансий + уведомления в Telegram',platform:'freelanceru',budget:'kr 1 800',budgetRaw:1800,desc:'Автоматический сбор вакансий с hh.ru и Indeed, фильтрация по критериям, отправка в Telegram канал.',tags:['n8n','Parsing','Telegram'],matchTags:['n8n'],score:85,date:'6 часов назад',urgent:false,filter:'freelanceru'},
+  {id:4,title:'AI Content Generator — автоматические SEO статьи',platform:'upwork',budget:'kr 6 500',budgetRaw:6500,desc:'Система генерации 20–30 SEO статей в день на основе кластеров ключевых слов. GPT-4 + WordPress автопубликация.',tags:['AI','SEO','GPT-4','WordPress'],matchTags:['AI','SEO'],score:95,date:'1 час назад',urgent:true,filter:'upwork'},
+  {id:5,title:'Stripe + Notion интеграция для онлайн-курсов',platform:'fiverr',budget:'kr 2 900',budgetRaw:2900,desc:'При оплате курса через Stripe — автоматически добавлять студента в Notion базу и отправлять welcome email.',tags:['Stripe','Notion','Make.com'],matchTags:['Stripe','Make.com'],score:79,date:'8 часов назад',urgent:false,filter:'fiverr'},
+  {id:6,title:'Автоматизация инвойсов: 1С → PDF → email клиенту',platform:'freelanceru',budget:'kr 4 100',budgetRaw:4100,desc:'Выгрузка данных из 1С, формирование PDF инвойса, отправка клиенту и сохранение в Google Drive.',tags:['1С','PDF','Automation'],matchTags:[],score:67,date:'1 день назад',urgent:false,filter:'freelanceru'},
+  {id:7,title:'LinkedIn Outreach Bot — автоматические коннекты + сообщения',platform:'upwork',budget:'kr 5 200',budgetRaw:5200,desc:'Автоматизация LinkedIn: коннекты по ICP, персонализированные первые сообщения, follow-up через 3 дня.',tags:['LinkedIn','Outreach','Python'],matchTags:['Outreach'],score:90,date:'3 часа назад',urgent:true,filter:'upwork'},
+  {id:8,title:'NOK Forex алерты в Telegram через Make.com',platform:'kwork',budget:'kr 1 600',budgetRaw:1600,desc:'Отслеживание курсов NOK/USD/EUR/GBP, алерт в Telegram при движении больше 0.3%. Бесплатный API.',tags:['Make.com','Forex','NOK','Telegram'],matchTags:['Make.com','NOK'],score:97,date:'30 мин назад',urgent:true,filter:'kwork'},
+  {id:9,title:'Дашборд аналитики для e-commerce (Python + Streamlit)',platform:'upwork',budget:'kr 8 800',budgetRaw:8800,desc:'Визуализация продаж, конверсий, LTV. Данные из WooCommerce + Google Analytics. Автообновление каждый час.',tags:['Python','Streamlit','Analytics'],matchTags:[],score:74,date:'5 часов назад',urgent:false,filter:'upwork'},
+  {id:10,title:'AI Resume Parser — автоматическая обработка CV',platform:'fiverr',budget:'kr 3 300',budgetRaw:3300,desc:'Парсинг CV из PDF, извлечение ключевых данных, запись в Airtable. GPT-4 для нормализации данных.',tags:['AI','PDF','Airtable','GPT-4'],matchTags:['AI','GPT-4'],score:83,date:'7 часов назад',urgent:false,filter:'fiverr'},
+  {id:11,title:'Automatisering av fakturabehandling (норвежский клиент)',platform:'upwork',budget:'kr 12 000',budgetRaw:12000,desc:'Норвежская компания. Нужна автоматизация обработки счетов: OCR → проверка → одобрение → оплата. Make.com или n8n.',tags:['Norway','Make.com','OCR','Finance'],matchTags:['Make.com','Norway'],score:96,date:'1 час назад',urgent:true,filter:'upwork'},
+  {id:12,title:'Crypto Portfolio Tracker с алертами (Python)',platform:'kwork',budget:'kr 2 800',budgetRaw:2800,desc:'Трекер портфеля с Binance API, расчёт PnL, алерты при изменении на X%. Telegram или email уведомления.',tags:['Python','Binance','Crypto','API'],matchTags:[],score:71,date:'12 часов назад',urgent:false,filter:'kwork'},
+];
+
+const NICHES = [
+  {cat:'⚙️ Автоматизация',title:'Make.com / n8n Specialist',desc:'Самая горячая ниша 2026. Бизнес платит kr 5–25K за один сценарий. Конкуренция всё ещё низкая.',score:96,demand:'🔥 Критический',fill:96,color:'var(--cyan)'},
+  {cat:'🤖 AI Integration',title:'GPT-4 / Claude API Dev',desc:'Интеграция LLM в бизнес-процессы. Норвежский рынок почти не закрыт. Средний чек kr 15–50K.',score:94,demand:'🔥 Критический',fill:94,color:'var(--cyan)'},
+  {cat:'🇳🇴 Норвегия',title:'Lokal Automatiseringsekspert',desc:'Норвежский бизнес платит в 2–3 раза больше чем глобальный рынок. Языковой барьер = твоё преимущество.',score:91,demand:'⭐ Высокий',fill:91,color:'var(--gold)'},
+  {cat:'💬 Боты',title:'Telegram/Discord AI Bots',desc:'Быстрые деньги. Малый бизнес готов платить kr 2–8K за бота. Повторяемые решения масштабируются.',score:82,demand:'⭐ Высокий',fill:82,color:'var(--gold)'},
+  {cat:'✍️ Контент',title:'AI SEO Content Factory',desc:'Агентства хотят 50–100 статей/нед. Автоматизированная фабрика контента = пассивный доход.',score:76,demand:'📈 Растёт',fill:76,color:'var(--green)'},
+  {cat:'📊 Аналитика',title:'Business Intelligence Dashboards',desc:'Python + Streamlit/Grafana дашборды для SMB. Долгосрочные ретейнеры kr 3–5K/мес.',score:73,demand:'📈 Растёт',fill:73,color:'var(--green)'},
+];
+
+const PIPELINE_DATA = {
+  'Найдено':[
+    {name:'NOK Forex алерты',platform:'Kwork',budget:'kr 1 600'},
+    {name:'AI SEO Generator',platform:'Upwork',budget:'kr 6 500'},
+    {name:'Fakturabehandling NO',platform:'Upwork',budget:'kr 12 000'},
+  ],
+  'Питч готов':[
+    {name:'Make.com CRM',platform:'Upwork',budget:'kr 3 800'},
+    {name:'LinkedIn Bot',platform:'Upwork',budget:'kr 5 200'},
+  ],
+  'Отправлен':[
+    {name:'Telegram AI Bot',platform:'Kwork',budget:'kr 2 200'},
+    {name:'n8n Workflow',platform:'Freelancer.ru',budget:'kr 1 800'},
+    {name:'Stripe+Notion',platform:'Fiverr',budget:'kr 2 900'},
+  ],
+  'Переговоры':[
+    {name:'AI Content Factory',platform:'Upwork',budget:'kr 6 500'},
+    {name:'Automatisering NO',platform:'Direct',budget:'kr 18 000'},
+  ],
+  'Закрыто ✓':[
+    {name:'Make.com Migration',platform:'Upwork',budget:'kr 4 200'},
+    {name:'Telegram Bot SMB',platform:'Kwork',budget:'kr 3 100'},
+    {name:'RAG Knowledge Base',platform:'Direct',budget:'kr 15 200'},
+  ],
+};
+
+const PITCH_HISTORY = [
+  {task:'Make.com CRM интеграция',platform:'Upwork',budget:'kr 3 800',status:'pending',date:'10 мар'},
+  {task:'LinkedIn Outreach Bot',platform:'Upwork',budget:'kr 5 200',status:'replied',date:'09 мар'},
+  {task:'n8n Workflow парсинг',platform:'Freelancer.ru',budget:'kr 1 800',status:'pending',date:'08 мар'},
+  {task:'Stripe + Notion',platform:'Fiverr',budget:'kr 2 900',status:'closed',date:'07 мар'},
+  {task:'Telegram AI Bot',platform:'Kwork',budget:'kr 2 200',status:'replied',date:'06 мар'},
+];
+
+let currentPlatform = 'all';
+let currentTask = null;
+
+// ── RENDER ──
+function renderTrends(filter='all'){
+  const grid = document.getElementById('trend-grid');
+  const data = filter==='all' ? TRENDS : TRENDS.filter(t=>t.filter.includes(filter));
+  grid.innerHTML = data.map(t=>`
+    <div class="trend-card ${t.type}" onclick="analyzeTrend('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="tc-cat">${t.cat}</div>
+        <div style="text-align:right"><div class="tc-score">${t.score}</div><div class="tc-demand">${t.change}</div></div>
+      </div>
+      <div class="tc-title">${t.title}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-meta">
+        <span>💰 ${t.budget}</span>
+        <span>📊 ${t.demand}</span>
+      </div>
+      <div class="bar-mini"><div class="bar-mini-fill" style="width:${t.fill}%;background:var(--cyan)"></div></div>
+    </div>
+  `).join('');
+}
+renderTrends();
+
+function renderNiches(){
+  const grid = document.getElementById('niche-grid');
+  grid.innerHTML = NICHES.map(n=>`
+    <div class="trend-card rising">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="tc-cat">${n.cat}</div>
+        <div style="text-align:right"><div class="tc-score" style="color:${n.color}">${n.score}</div></div>
+      </div>
+      <div class="tc-title">${n.title}</div>
+      <div class="tc-desc">${n.desc}</div>
+      <div class="tc-meta"><span>${n.demand}</span></div>
+      <div class="bar-mini"><div class="bar-mini-fill" style="width:${n.fill}%;background:${n.color}"></div></div>
+    </div>
+  `).join('');
+}
+renderNiches();
+
+function renderTasks(data){
+  const list = document.getElementById('task-list');
+  if(!data.length){list.innerHTML='<div style="padding:24px;text-align:center;color:var(--dim);font-size:11px">Задачи не найдены</div>';return;}
+  list.innerHTML = data.map(t=>`
+    <div class="task-item ${t.urgent?'urgent':''}" id="task-${t.id}" onclick="selectTask(${t.id})">
+      <div class="task-top">
+        <div class="task-title">${t.title}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="task-budget">${t.budget}</div>
+          <div class="task-platform">${platformEmoji(t.platform)} ${t.platform}</div>
+        </div>
+      </div>
+      <div class="task-row">
+        ${t.tags.map(tag=>`<span class="task-tag ${t.matchTags.includes(tag)?'match':''}">${tag}</span>`).join('')}
+        ${t.urgent?'<span class="task-tag hot">🔥 Срочно</span>':''}
+      </div>
+      <div class="task-desc">${t.desc}</div>
+      <div class="task-footer">
+        <div class="task-meta"><span>🕐 ${t.date}</span><span>📍 ${t.platform}</span></div>
+        <span class="task-score-badge ${t.score>=85?'score-high':t.score>=70?'score-mid':'score-low'}">Match ${t.score}%</span>
+      </div>
+      <div class="task-actions">
+        <button class="ta-btn" onclick="event.stopPropagation();analyzeTask(${t.id})">🧠 AI Анализ</button>
+        <button class="ta-btn primary" onclick="event.stopPropagation();openPitch(${t.id})">✉️ Написать питч</button>
+      </div>
+    </div>
+  `).join('');
+}
+renderTasks(TASKS);
+
+function renderPipeline(){
+  const board = document.getElementById('pipeline-board');
+  board.innerHTML = Object.entries(PIPELINE_DATA).map(([stage, items])=>`
+    <div class="pipe-col">
+      <div class="pipe-header">
+        <span class="pipe-title">${stage}</span>
+        <span class="pipe-num">${items.length}</span>
+      </div>
+      ${items.map(i=>`
+        <div class="pipe-item">
+          <div class="pi-name">${i.name}</div>
+          <div class="pi-platform">${i.platform}</div>
+          <div class="pi-budget">${i.budget}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+renderPipeline();
+
+function renderPitches(){
+  const tb = document.getElementById('pitches-tbody');
+  tb.innerHTML = PITCH_HISTORY.map(p=>`
+    <tr>
+      <td style="color:var(--text)">${p.task}</td>
+      <td>${platformEmoji(p.platform.toLowerCase())} ${p.platform}</td>
+      <td style="color:var(--gold)">${p.budget}</td>
+      <td><span class="task-score-badge ${p.status==='replied'?'score-high':p.status==='closed'?'score-mid':'score-low'}">${p.status==='replied'?'💬 Ответили':p.status==='closed'?'✅ Закрыто':'⏳ Ожидание'}</span></td>
+      <td style="color:var(--dim)">${p.date}</td>
+      <td><button class="ta-btn" onclick="toast('📋 Питч скопирован')">Копировать</button></td>
+    </tr>
+  `).join('');
+}
+renderPitches();
+
+// ── FILTERING ──
+function filterTrends(f, el){
+  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  renderTrends(f);
+}
+function filterPlatform(p, el){
+  currentPlatform = p;
+  document.querySelectorAll('.pbar-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  filterTasks();
+}
+function filterTasks(){
+  let data = [...TASKS];
+  const q = document.getElementById('task-search').value.toLowerCase();
+  const minBudget = parseInt(document.getElementById('task-budget').value)||0;
+  const sort = document.getElementById('task-sort').value;
+  if(currentPlatform!=='all') data = data.filter(t=>t.filter===currentPlatform);
+  if(q) data = data.filter(t=>(t.title+t.desc+t.tags.join(' ')).toLowerCase().includes(q));
+  if(minBudget) data = data.filter(t=>t.budgetRaw>=minBudget);
+  if(sort==='score') data.sort((a,b)=>b.score-a.score);
+  if(sort==='budget') data.sort((a,b)=>b.budgetRaw-a.budgetRaw);
+  renderTasks(data);
+}
+function selectTask(id){
+  document.querySelectorAll('.task-item').forEach(el=>el.classList.remove('selected'));
+  const el = document.getElementById('task-'+id);
+  if(el) el.classList.add('selected');
+  currentTask = TASKS.find(t=>t.id===id);
+}
+
+// ── AI CALLS ──
+async function searchTrends(){
+  const q = document.getElementById('trend-q').value.trim();
+  if(!q){toast('⚠️ Введи запрос для анализа');return;}
+  const btn = document.getElementById('trend-btn');
+  const spinner = document.getElementById('trend-spinner');
+  btn.classList.add('loading');btn.textContent='Анализирую...';
+  spinner.style.display='block';
+  document.getElementById('trend-ai-text').textContent='';
+  await streamAI(
+    `Ты эксперт по фриланс-рынку и цифровому заработку в Норвегии. Проанализируй тренд: "${q}". 
+    Дай: 1) Уровень спроса на фриланс-платформах (Upwork, Fiverr, Kwork, Freelancer) 2) Средний бюджет заказов 3) Уровень конкуренции 4) Конкретные возможности для человека с навыками Make.com, n8n, Python, AI 5) Топ-3 быстрых действия для старта прямо сейчас.
+    Отвечай конкретно, с цифрами. Контекст: пользователь живёт в Норвегии, ориентируется на NOK.`,
+    'trend-ai-text'
+  );
+  btn.classList.remove('loading');btn.textContent='🔭 Анализировать';
+  spinner.style.display='none';
+}
+
+async function analyzeTrend(id){
+  const t = TRENDS.find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('trend-ai-text').textContent='';
+  document.getElementById('trend-spinner').style.display='block';
+  await streamAI(
+    `Ты советник по фриланс-заработку в Норвегии. Тренд: "${t.title}". Категория: ${t.cat}. Рост: ${t.change}. Бюджеты: ${t.budget}.
+    Дай быстрый тактический разбор: как монетизировать этот тренд прямо сейчас через Upwork/Fiverr/Kwork? 
+    Какой первый шаг сделать сегодня? Какой питч написать? Конкретно и коротко — 3-4 параграфа.`,
+    'trend-ai-text'
+  );
+  document.getElementById('trend-spinner').style.display='none';
+}
+
+async function analyzeTask(id){
+  const t = TASKS.find(x=>x.id===id);
+  if(!t) return;
+  toast('🧠 Анализирую задачу...');
+  const panel = document.getElementById('panel-ai');
+  show('ai', document.querySelector('[onclick*=ai]'));
+  document.getElementById('ai-result-text').textContent='';
+  document.getElementById('ai-spinner').style.display='block';
+  await streamAI(
+    `Задача с фриланс-платформы ${t.platform}: "${t.title}". Бюджет: ${t.budget}. Описание: ${t.desc}. Теги: ${t.tags.join(', ')}.
+    Дай анализ: 1) Реальная сложность и время выполнения 2) Подходит ли это для специалиста Make.com/n8n/AI? 3) Как выиграть этот тендер — что написать в питче? 4) Риски проекта 5) Предложи стратегию ценообразования.
+    Контекст: фрилансер в Норвегии, хочет максимизировать доход с минимумом усилий.`,
+    'ai-result-text'
+  );
+  document.getElementById('ai-spinner').style.display='none';
+}
+
+async function runAIAnalysis(){
+  const q = document.getElementById('ai-q').value.trim();
+  if(!q){toast('⚠️ Введи вопрос');return;}
+  document.getElementById('ai-result-text').textContent='';
+  document.getElementById('ai-spinner').style.display='block';
+  await streamAI(
+    `Ты стратегический советник по фриланс-рынку и цифровому заработку. Пользователь живёт в Норвегии, специализируется на Make.com, n8n, AI автоматизации, Python скриптах. 
+    Вопрос: "${q}"
+    Дай развёрнутый практический ответ с конкретными платформами, цифрами, и следующими шагами.`,
+    'ai-result-text'
+  );
+  document.getElementById('ai-spinner').style.display='none';
+}
+
+function setAIQ(q, el){
+  document.getElementById('ai-q').value = q;
+  document.querySelectorAll('#panel-ai .fpill').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  runAIAnalysis();
+}
+
+async function openPitch(id){
+  currentTask = TASKS.find(t=>t.id===id);
+  if(!currentTask) return;
+  document.getElementById('pitch-task-title').textContent = currentTask.title;
+  document.getElementById('pitch-task-meta').textContent = `${platformEmoji(currentTask.platform)} ${currentTask.platform} · ${currentTask.budget} · Match ${currentTask.score}%`;
+  document.getElementById('pitch-text').value = '';
+  document.getElementById('pitch-rate').value = currentTask.budget;
+  document.getElementById('pitch-deadline').value = '3–5 рабочих дней';
+  document.getElementById('pitch-overlay').classList.add('open');
+  document.getElementById('gen-bar').style.display = 'flex';
+  await generatePitch(currentTask);
+  document.getElementById('gen-bar').style.display = 'none';
+}
+
+async function generatePitch(task){
+  const ta = document.getElementById('pitch-text');
+  ta.value = '';
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`Ты эксперт по написанию winning proposals на фриланс-платформах. Пиши от первого лица, кратко и убедительно. 
+        Профиль фрилансера: специалист Make.com, n8n, Python, AI автоматизация. Живёт в Норвегии. 
+        Питч должен: начинаться с понимания проблемы клиента, показать конкретный подход, упомянуть релевантный опыт, 
+        закончить чётким call-to-action. Длина: 100–150 слов. Язык: тот же что в описании задачи.`,
+        messages:[{role:'user',content:`Напиши winning proposal для задачи: "${task.title}". Описание: ${task.desc}. Бюджет: ${task.budget}. Платформа: ${task.platform}.`}]
+      })
+    });
+    const data = await res.json();
+    ta.value = data.content?.[0]?.text || 'Ошибка генерации. Напиши вручную.';
+  } catch(e){
+    ta.value = `Привет!\n\nЯ изучил ваш проект "${task.title}" и точно понимаю что нужно сделать.\n\nМой подход: [опиши подход]\n\nПодобный проект я уже реализовывал — результат [результат].\n\nГотов начать сегодня. Напишите — обсудим детали!\n\nС уважением`;
+  }
+}
+
+async function regeneratePitch(){
+  if(!currentTask) return;
+  document.getElementById('gen-bar').style.display='flex';
+  await generatePitch(currentTask);
+  document.getElementById('gen-bar').style.display='none';
+}
+
+// Streaming AI helper
+async function streamAI(prompt, targetId){
+  const el = document.getElementById(targetId);
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'Нет ответа.';
+    // Typewriter effect
+    el.textContent = '';
+    let i = 0;
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    el.appendChild(cursor);
+    const interval = setInterval(()=>{
+      if(i < text.length){
+        el.insertBefore(document.createTextNode(text[i]), cursor);
+        i++;
+      } else {
+        clearInterval(interval);
+        cursor.remove();
+      }
+    }, 8);
+  } catch(e){
+    el.textContent = 'Нет соединения с AI. Проверь сеть и попробуй снова.';
+  }
+}
+
+// ── UTILS ──
+function platformEmoji(p){
+  const map={upwork:'🟢',fiverr:'🟢',kwork:'🔵',freelanceru:'🔴',direct:'⭐',fiverr:'🟠'};
+  return map[p.toLowerCase()]||'🌐';
+}
+function closePitch(){document.getElementById('pitch-overlay').classList.remove('open');}
+function copyPitch(){
+  navigator.clipboard?.writeText(document.getElementById('pitch-text').value);
+  toast('📋 Питч скопирован в буфер');
+}
+function markApplied(){
+  if(currentTask){
+    const el = document.getElementById('task-'+currentTask.id);
+    if(el) el.classList.add('applied');
+  }
+  closePitch();
+  toast('✅ Задача отмечена как выполненная');
+}
+
+function show(id, el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const titles={trends:'Тренды <em>/ Trend Intelligence</em>',tasks:'Задачи <em>/ Task Hunter</em>',pipeline:'Pipeline <em>/ Outreach</em>',ai:'AI Анализ <em>/ Market Intel</em>',niches:'Ниши <em>/ Opportunity Map</em>',pitches:'Питчи <em>/ Sent</em>',stats:'Статистика <em>/ Performance</em>'};
+  document.getElementById('topbar-title').innerHTML = titles[id]||id;
+}
+
+function refreshTasks(btn){
+  btn.classList.add('spinning');
+  setTimeout(()=>{btn.classList.remove('spinning');toast('✓ Задачи обновлены — найдено 47 новых');},1400);
+}
+function refreshAll(){toast('⟳ Данные обновляются...');}
+
+let toastTimer;
+function toast(msg){
+  clearTimeout(toastTimer);
+  const t = document.getElementById('toast');
+  document.getElementById('toast-text').textContent = msg;
+  t.classList.add('show');
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// Init
+setTimeout(()=>toast('🎯 47 новых задач найдено · 6 срочных'), 800);
+</script>
+</body>
+</html>

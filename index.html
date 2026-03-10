@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blomster Hage — AI Agent Garden</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+:root{
+  --bg:#080808;--s1:#0f0f0f;--s2:#141414;
+  --border:rgba(255,255,255,0.055);
+  --text:#e6e2d8;--muted:rgba(230,226,216,0.38);--dim:rgba(230,226,216,0.16);
+  --gold:#c9a96e;--gold-glow:rgba(201,169,110,0.1);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:13px;line-height:1.6;overflow-x:hidden;cursor:none;}
+
+/* CURSOR */
+#cur{position:fixed;width:5px;height:5px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);}
+#cur-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(201,169,110,0.22);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .38s cubic-bezier(.25,.46,.45,.94);}
+
+/* GRAIN */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.45;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:center;justify-content:space-between;padding:20px 52px;border-bottom:1px solid var(--border);background:rgba(8,8,8,0.92);backdrop-filter:blur(24px);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:.06em;cursor:none;}
+.logo em{color:var(--gold);font-style:italic;}
+.nav-right{display:flex;align-items:center;gap:28px;}
+.nav-link{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .2s;cursor:none;}
+.nav-link:hover{color:var(--text);}
+.lang-switch{display:flex;gap:5px;}
+.lang-btn{background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;padding:5px 10px;cursor:none;transition:all .2s;}
+.lang-btn.active,.lang-btn:hover{border-color:var(--gold);color:var(--gold);}
+.nav-cta{background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;padding:9px 22px;cursor:none;transition:all .25s;}
+.nav-cta:hover{background:var(--gold);color:var(--bg);}
+
+/* HERO + CANVAS */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:120px 52px 80px;position:relative;z-index:2;text-align:center;overflow:hidden;}
+#particles-canvas{position:absolute;inset:0;z-index:0;pointer-events:none;}
+.hero-content{position:relative;z-index:2;}
+.hero-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:28px;opacity:0;animation:fadeUp .8s .2s forwards;}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,9vw,112px);font-weight:300;line-height:1.0;margin-bottom:24px;opacity:0;animation:fadeUp .9s .35s forwards;}
+.hero-title em{font-style:italic;color:var(--gold);}
+.hero-sub{font-size:12px;line-height:1.85;color:var(--muted);max-width:460px;margin:0 auto 48px;opacity:0;animation:fadeUp .8s .5s forwards;}
+.hero-actions{display:flex;gap:14px;align-items:center;justify-content:center;opacity:0;animation:fadeUp .8s .65s forwards;}
+.btn-primary{background:var(--gold);color:var(--bg);border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;padding:14px 36px;cursor:none;transition:all .25s;text-transform:uppercase;}
+.btn-primary:hover{background:#d4b87e;}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;padding:14px 28px;cursor:none;transition:all .25s;text-transform:uppercase;}
+.btn-ghost:hover{border-color:var(--text);color:var(--text);}
+.scroll-hint{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);opacity:0;animation:fadeUp .8s .9s forwards;text-align:center;z-index:2;}
+.scroll-hint span{font-size:10px;letter-spacing:.2em;color:var(--dim);display:block;margin-bottom:10px;text-transform:uppercase;}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--gold),transparent);margin:0 auto;animation:pulse 2s infinite;}
+
+/* STATS */
+.stats-bar{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--s1);padding:28px 52px;display:flex;justify-content:center;gap:80px;position:relative;z-index:2;}
+.stat{text-align:center;}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:300;color:var(--gold);}
+.stat-label{font-size:10px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-top:4px;}
+
+/* SECTIONS */
+.section{padding:96px 52px;position:relative;z-index:2;max-width:1400px;margin:0 auto;}
+.section-tag{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+.section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4vw,50px);font-weight:300;line-height:1.1;margin-bottom:64px;}
+.section-title em{font-style:italic;color:var(--muted);}
+
+/* FLOWER GRID */
+.flower-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.flower-card{background:var(--s1);border:1px solid var(--border);padding:44px 38px;position:relative;overflow:hidden;transition:all .4s cubic-bezier(.25,.46,.45,.94);cursor:none;}
+.flower-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,var(--fc,rgba(201,169,110,.1)) 0%,transparent 60%);opacity:0;transition:opacity .45s;}
+.flower-card:hover{border-color:rgba(255,255,255,0.1);transform:translateY(-3px);box-shadow:0 20px 40px rgba(0,0,0,.4);}
+.flower-card:hover::before{opacity:1;}
+.flower-emoji{font-size:48px;margin-bottom:20px;display:block;line-height:1;}
+.flower-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;margin-bottom:5px;}
+.flower-code{font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-bottom:16px;}
+.flower-desc{font-size:12px;line-height:1.75;color:var(--muted);margin-bottom:22px;}
+.flower-tasks{list-style:none;}
+.flower-tasks li{font-size:11px;color:var(--dim);padding:7px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;}
+.flower-tasks li:last-child{border:none;}
+.flower-tasks li::before{content:'→';color:var(--gold);opacity:.55;flex-shrink:0;margin-top:1px;}
+.flower-status{position:absolute;top:22px;right:22px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:4px 10px;border:1px solid;}
+.s-active{color:#7eb87e;border-color:rgba(126,184,126,.22);background:rgba(126,184,126,.05);}
+.s-beta{color:#b8a97e;border-color:rgba(184,169,126,.22);background:rgba(184,169,126,.05);}
+.s-soon{color:var(--dim);border-color:var(--border);}
+.flower-detail-btn{margin-top:18px;width:100%;padding:10px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:none;transition:all .25s;}
+.flower-detail-btn:hover{border-color:var(--gold);color:var(--gold);}
+
+/* HOW */
+.how-wrap{padding:96px 52px;position:relative;z-index:2;border-top:1px solid var(--border);}
+.how-inner{max-width:1400px;margin:0 auto;}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:64px;}
+.step{padding:36px 32px;border-right:1px solid var(--border);}
+.step:last-child{border-right:none;}
+.step-num{font-family:'Cormorant Garamond',serif;font-size:52px;color:var(--border);font-weight:300;line-height:1;margin-bottom:18px;}
+.step-icon{font-size:24px;margin-bottom:14px;}
+.step-title{font-family:'Cormorant Garamond',serif;font-size:19px;margin-bottom:10px;}
+.step-text{font-size:12px;color:var(--muted);line-height:1.7;}
+
+/* PRICING */
+.pricing-wrap{padding:96px 52px;position:relative;z-index:2;background:var(--s1);border-top:1px solid var(--border);}
+.pricing-inner{max-width:1400px;margin:0 auto;}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:64px;}
+.plan{padding:46px 38px;background:var(--bg);border:1px solid var(--border);position:relative;}
+.plan.featured{border-color:var(--gold);background:var(--gold-glow);}
+.plan-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--bg);font-size:9px;letter-spacing:.18em;padding:5px 14px;text-transform:uppercase;white-space:nowrap;}
+.plan-name{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
+.plan-price{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;line-height:1;margin-bottom:4px;}
+.plan-price sup{font-size:22px;vertical-align:top;margin-top:10px;}
+.plan-period{font-size:11px;color:var(--muted);margin-bottom:30px;}
+.plan-features{list-style:none;margin-bottom:34px;}
+.plan-features li{font-size:12px;color:var(--muted);padding:9px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+.plan-features li::before{content:'✦';font-size:8px;color:var(--gold);opacity:.7;flex-shrink:0;margin-top:3px;}
+.plan-btn{width:100%;padding:13px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:none;transition:all .25s;}
+.plan.featured .plan-btn{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.plan-btn:hover{border-color:var(--gold);color:var(--gold);}
+.plan.featured .plan-btn:hover{background:#d4b87e;}
+
+/* WAITLIST SECTION */
+.waitlist-wrap{padding:96px 52px;position:relative;z-index:2;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.waitlist-inner{max-width:680px;margin:0 auto;text-align:center;}
+.waitlist-wrap .section-title{text-align:center;}
+.waitlist-form{display:flex;flex-direction:column;gap:14px;margin-top:0;}
+.wl-row{display:flex;gap:10px;}
+.wl-input{flex:1;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:14px 18px;outline:none;transition:border-color .2s;cursor:none;}
+.wl-input::placeholder{color:var(--dim);}
+.wl-input:focus{border-color:var(--gold);}
+.wl-select{flex:1;background:var(--s1);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:12px;padding:14px 18px;outline:none;cursor:none;appearance:none;}
+.wl-submit{background:var(--gold);color:var(--bg);border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.16em;padding:16px 40px;cursor:none;transition:all .25s;text-transform:uppercase;width:100%;}
+.wl-submit:hover{background:#d4b87e;}
+.wl-note{font-size:10px;color:var(--dim);letter-spacing:.1em;margin-top:8px;}
+.wl-success{display:none;text-align:center;padding:32px;border:1px solid rgba(126,184,126,.22);background:rgba(126,184,126,.04);}
+.wl-success .big-emoji{font-size:48px;display:block;margin-bottom:16px;}
+.wl-success h3{font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:8px;}
+.wl-success p{font-size:12px;color:var(--muted);}
+
+/* FOOTER */
+footer{padding:48px 52px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;}
+.footer-logo em{color:var(--gold);font-style:italic;}
+.footer-copy{font-size:11px;color:var(--dim);letter-spacing:.08em;}
+
+/* AGENT DETAIL PAGE */
+.agent-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;overflow-y:auto;}
+.agent-page.open{display:block;}
+.agent-page-inner{max-width:1000px;margin:0 auto;padding:120px 52px 80px;}
+.agent-back{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:none;display:flex;align-items:center;gap:8px;margin-bottom:64px;transition:color .2s;}
+.agent-back:hover{color:var(--gold);}
+.agent-hero{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;margin-bottom:80px;}
+.agent-big-emoji{font-size:120px;line-height:1;display:block;margin-bottom:24px;}
+.agent-page-title{font-family:'Cormorant Garamond',serif;font-size:clamp(40px,6vw,72px);font-weight:300;line-height:1.0;margin-bottom:12px;}
+.agent-page-code{font-size:10px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;margin-bottom:24px;}
+.agent-page-desc{font-size:13px;color:var(--muted);line-height:1.85;margin-bottom:32px;}
+.agent-page-status{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;padding:6px 14px;border:1px solid;}
+.agent-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-bottom:64px;}
+.agent-metric{background:var(--s1);border:1px solid var(--border);padding:28px 24px;text-align:center;}
+.agent-metric-num{font-family:'Cormorant Garamond',serif;font-size:36px;color:var(--gold);font-weight:300;}
+.agent-metric-label{font-size:10px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-top:6px;}
+.agent-tasks-full{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:64px;}
+.agent-task-item{background:var(--s1);border:1px solid var(--border);padding:24px 28px;display:flex;gap:16px;align-items:flex-start;}
+.agent-task-icon{font-size:24px;flex-shrink:0;}
+.agent-task-title{font-family:'Cormorant Garamond',serif;font-size:17px;margin-bottom:6px;}
+.agent-task-desc{font-size:11px;color:var(--muted);line-height:1.65;}
+.agent-cta-row{display:flex;gap:12px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(14px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--s2);border:1px solid rgba(255,255,255,.08);padding:52px;max-width:540px;width:90%;position:relative;transform:translateY(16px);transition:transform .3s;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-close{position:absolute;top:18px;right:22px;background:none;border:none;color:var(--muted);font-size:22px;cursor:none;line-height:1;transition:color .2s;}
+.modal-close:hover{color:var(--text);}
+.modal-emoji{font-size:52px;margin-bottom:16px;display:block;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:32px;margin-bottom:6px;}
+.modal-code{font-size:10px;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:24px;}
+.modal-desc{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:28px;}
+.modal-tasks{list-style:none;margin-bottom:28px;}
+.modal-tasks li{font-size:12px;color:var(--dim);padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start;}
+.modal-tasks li::before{content:'◆';font-size:7px;color:var(--gold);flex-shrink:0;margin-top:4px;}
+.modal-tasks li:last-child{border:none;}
+.modal-open-btn{width:100%;padding:13px;background:var(--gold);border:none;color:var(--bg);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:none;transition:all .25s;}
+.modal-open-btn:hover{background:#d4b87e;}
+
+/* CHAT */
+.chat-toggle{position:fixed;bottom:32px;right:32px;z-index:350;width:56px;height:56px;background:var(--gold);border:none;border-radius:50%;font-size:22px;cursor:none;box-shadow:0 8px 32px rgba(201,169,110,0.3);transition:all .3s;display:flex;align-items:center;justify-content:center;}
+.chat-toggle:hover{transform:scale(1.1);box-shadow:0 12px 40px rgba(201,169,110,0.4);}
+.chat-window{position:fixed;bottom:100px;right:32px;z-index:350;width:360px;height:500px;background:var(--s2);border:1px solid var(--border);display:flex;flex-direction:column;transform:translateY(20px) scale(.96);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.25,.46,.45,.94);}
+.chat-window.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all;}
+.chat-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.chat-header-info{display:flex;align-items:center;gap:10px;}
+.chat-avatar{font-size:22px;}
+.chat-header-name{font-family:'Cormorant Garamond',serif;font-size:17px;}
+.chat-header-status{font-size:10px;color:#7eb87e;letter-spacing:.1em;}
+.chat-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:none;transition:color .2s;}
+.chat-close:hover{color:var(--text);}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.chat-messages::-webkit-scrollbar{width:3px;}
+.chat-messages::-webkit-scrollbar-track{background:transparent;}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{max-width:85%;padding:10px 14px;font-size:12px;line-height:1.6;}
+.msg.agent{background:var(--s1);border:1px solid var(--border);align-self:flex-start;border-radius:0 8px 8px 8px;}
+.msg.user{background:var(--gold-glow);border:1px solid rgba(201,169,110,.2);align-self:flex-end;border-radius:8px 0 8px 8px;color:var(--text);}
+.msg.typing{display:flex;gap:4px;align-items:center;padding:12px 16px;}
+.typing-dot{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:typingBounce 1.2s infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+.chat-input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:10px 14px;outline:none;transition:border-color .2s;resize:none;height:40px;}
+.chat-input:focus{border-color:var(--gold);}
+.chat-send{background:var(--gold);border:none;color:var(--bg);font-size:16px;width:40px;height:40px;cursor:none;transition:background .2s;flex-shrink:0;}
+.chat-send:hover{background:#d4b87e;}
+.chat-suggestions{padding:8px 16px 12px;display:flex;flex-wrap:wrap;gap:6px;}
+.chat-sug{background:transparent;border:1px solid var(--border);color:var(--dim);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;padding:5px 10px;cursor:none;transition:all .2s;}
+.chat-sug:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:.9}}
+@keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  nav{padding:18px 24px;}
+  .hero,.section,.how-wrap,.pricing-wrap,.waitlist-wrap{padding:72px 24px;}
+  .flower-grid,.pricing-grid{grid-template-columns:1fr 1fr;}
+  .steps{grid-template-columns:1fr 1fr;}
+  .stats-bar{gap:32px;padding:24px;flex-wrap:wrap;}
+  footer{flex-direction:column;gap:14px;text-align:center;padding:36px 24px;}
+  .agent-hero{grid-template-columns:1fr;}
+  .agent-tasks-full{grid-template-columns:1fr;}
+  .agent-metrics{grid-template-columns:1fr 1fr;}
+  .chat-window{width:calc(100vw - 32px);right:16px;}
+}
+@media(max-width:580px){
+  .flower-grid,.pricing-grid{grid-template-columns:1fr;}
+  .steps{grid-template-columns:1fr;}
+  .step{border-right:none;border-bottom:1px solid var(--border);}
+  .nav-right{gap:10px;}
+  .hero-title{font-size:44px;}
+  .wl-row{flex-direction:column;}
+  .agent-page-inner{padding:90px 24px 60px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo" onclick="showMain()">Blomster <em>Hage</em></div>
+  <div class="nav-right">
+    <a href="#garden" class="nav-link" data-ru="Агенты" data-no="Agenter" data-en="Agents">Агенты</a>
+    <a href="#how" class="nav-link" data-ru="Как работает" data-no="Hvordan" data-en="How it works">Как работает</a>
+    <a href="#pricing" class="nav-link" data-ru="Тарифы" data-no="Priser" data-en="Pricing">Тарифы</a>
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+      <button class="lang-btn" onclick="setLang('no')">NO</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="nav-cta" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="Вступить" data-no="Bli med" data-en="Join Waitlist">Вступить</button>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="main-content">
+
+<!-- HERO -->
+<section class="hero">
+  <canvas id="particles-canvas"></canvas>
+  <div class="hero-content">
+    <p class="hero-eyebrow" data-ru="🌱 Автоматизированный заработок · ИИ-агенты · Норвегия" data-no="🌱 Automatisert inntekt · AI-agenter · Norge" data-en="🌱 Automated Income · AI Agents · Norway">🌱 Автоматизированный заработок · ИИ-агенты · Норвегия</p>
+    <h1 class="hero-title">Blomster<br><em>Hage</em></h1>
+    <p class="hero-sub" data-ru="Сад ИИ-агентов, который зарабатывает пока ты спишь. Шесть специализированных агентов — один умный сад." data-no="En hage av AI-agenter som tjener mens du sover. Seks spesialiserte agenter — én smart hage." data-en="A garden of AI agents that earns while you sleep. Six specialised agents — one intelligent system.">Сад ИИ-агентов, который зарабатывает пока ты спишь. Шесть специализированных агентов — один умный сад.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="🌸 Вступить в сад" data-no="🌸 Bli med i hagen" data-en="🌸 Join the Garden">🌸 Вступить в сад</button>
+      <button class="btn-ghost" onclick="document.getElementById('garden').scrollIntoView({behavior:'smooth'})" data-ru="Посмотреть агентов" data-no="Se agentene" data-en="Meet the Agents">Посмотреть агентов</button>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span data-ru="Прокрутить" data-no="Bla ned" data-en="Scroll">Прокрутить</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">6</div><div class="stat-label" data-ru="Агентов" data-no="Agenter" data-en="Agents">Агентов</div></div>
+  <div class="stat"><div class="stat-num">24/7</div><div class="stat-label" data-ru="Работают" data-no="Aktive" data-en="Active">Работают</div></div>
+  <div class="stat"><div class="stat-num">∞</div><div class="stat-label" data-ru="Потоков дохода" data-no="Inntektsstrømmer" data-en="Income Streams">Потоков дохода</div></div>
+  <div class="stat"><div class="stat-num">NOK</div><div class="stat-label" data-ru="Ориентированы" data-no="Fokusert" data-en="Focused">Ориентированы</div></div>
+</div>
+
+<!-- GARDEN -->
+<section class="section" id="garden">
+  <div class="section-tag" data-ru="🌿 Агенты сада" data-no="🌿 Hagenes agenter" data-en="🌿 Garden Agents">🌿 Агенты сада</div>
+  <h2 class="section-title">Шесть цветков.<br><em>Один автоматизированный доход.</em></h2>
+  <div class="flower-grid">
+
+    <div class="flower-card" style="--fc:rgba(255,182,193,0.12)">
+      <span class="flower-status s-active" data-ru="Активен" data-no="Aktiv" data-en="Active">Активен</span>
+      <span class="flower-emoji">✍️🌸</span>
+      <div class="flower-name" data-ru="Контент-мастер" data-no="Innholdsekspert" data-en="Content Master">Контент-мастер</div>
+      <div class="flower-code">Agent 01 · Rosa Damascena</div>
+      <p class="flower-desc" data-ru="Генерирует продающие тексты, посты и статьи на автопилоте. Работает в твоём голосе." data-no="Genererer salgstekster og innlegg på autopilot i din stemme." data-en="Generates sales copy, posts and articles on autopilot in your voice.">Генерирует продающие тексты, посты и статьи на автопилоте. Работает в твоём голосе.</p>
+      <ul class="flower-tasks">
+        <li data-ru="📝 Посты для соцсетей" data-no="📝 Innlegg for sosiale medier" data-en="📝 Social media posts">📝 Посты для соцсетей</li>
+        <li data-ru="📧 Email-рассылки" data-no="📧 E-postkampanjer" data-en="📧 Email campaigns">📧 Email-рассылки</li>
+        <li data-ru="🔍 SEO-статьи" data-no="🔍 SEO-artikler" data-en="🔍 SEO articles">🔍 SEO-статьи</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('content')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+    <div class="flower-card" style="--fc:rgba(255,215,100,0.12)">
+      <span class="flower-status s-active" data-ru="Активен" data-no="Aktiv" data-en="Active">Активен</span>
+      <span class="flower-emoji">📊🌻</span>
+      <div class="flower-name" data-ru="Крипто-трейдер" data-no="Krypto-trader" data-en="Crypto Trader">Крипто-трейдер</div>
+      <div class="flower-code">Agent 02 · Helianthus</div>
+      <p class="flower-desc" data-ru="Мониторит рынки, арбитраж между биржами, EMA/RSI сигналы. NOK-пары в приоритете." data-no="Overvåker markeder, arbitrasje mellom børser, EMA/RSI-signaler for NOK." data-en="Monitors markets, cross-exchange arbitrage, EMA/RSI signals. NOK pairs prioritised.">Мониторит рынки, арбитраж между биржами, EMA/RSI сигналы. NOK-пары в приоритете.</p>
+      <ul class="flower-tasks">
+        <li data-ru="💹 Арбитраж Binance/Bybit/Revolut" data-no="💹 Arbitrasje Binance/Bybit/Revolut" data-en="💹 Binance/Bybit/Revolut arbitrage">💹 Арбитраж Binance/Bybit/Revolut</li>
+        <li data-ru="📈 Сигналы EMA/RSI" data-no="📈 EMA/RSI-signaler" data-en="📈 EMA/RSI signals">📈 Сигналы EMA/RSI</li>
+        <li data-ru="🇳🇴 Норвежский P&amp;L" data-no="🇳🇴 Norsk P&amp;L" data-en="🇳🇴 Norwegian P&amp;L">🇳🇴 Норвежский P&amp;L</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('crypto')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+    <div class="flower-card" style="--fc:rgba(147,255,200,0.1)">
+      <span class="flower-status s-active" data-ru="Активен" data-no="Aktiv" data-en="Active">Активен</span>
+      <span class="flower-emoji">⚙️🌿</span>
+      <div class="flower-name" data-ru="Автоматизатор" data-no="Automatiseringsekspert" data-en="Automator">Автоматизатор</div>
+      <div class="flower-code">Agent 03 · Fern Protocol</div>
+      <p class="flower-desc" data-ru="Строит Make.com сценарии, связывает сервисы, превращает ручной труд в пассивный доход." data-no="Bygger Make.com-scenarier og kobler tjenester for passiv inntekt." data-en="Builds Make.com scenarios, connects services, turns manual work into passive income.">Строит Make.com сценарии, связывает сервисы, превращает ручной труд в пассивный доход.</p>
+      <ul class="flower-tasks">
+        <li data-ru="🔗 Make.com / Zapier / n8n" data-no="🔗 Make.com / Zapier / n8n" data-en="🔗 Make.com / Zapier / n8n">🔗 Make.com / Zapier / n8n</li>
+        <li data-ru="💰 Stripe монетизация" data-no="💰 Stripe-monetisering" data-en="💰 Stripe monetisation">💰 Stripe монетизация</li>
+        <li data-ru="📊 NOK Forex Newsletter" data-no="📊 NOK Forex-nyhetsbrev" data-en="📊 NOK Forex Newsletter">📊 NOK Forex Newsletter</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('auto')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+    <div class="flower-card" style="--fc:rgba(255,140,100,0.1)">
+      <span class="flower-status s-beta" data-ru="Бета" data-no="Beta" data-en="Beta">Бета</span>
+      <span class="flower-emoji">🤝🌺</span>
+      <div class="flower-name" data-ru="Аутрич-охотник" data-no="Oppsøkende agent" data-en="Outreach Hunter">Аутрич-охотник</div>
+      <div class="flower-code">Agent 04 · Poppy Sales</div>
+      <p class="flower-desc" data-ru="Находит клиентов на фрилансе, пишет питчи, закрывает сделки автоматически." data-no="Finner frilanserkunder, skriver pitcher og lukker deal automatisk." data-en="Finds freelance clients, writes personalised pitches, closes deals automatically.">Находит клиентов на фрилансе, пишет питчи, закрывает сделки автоматически.</p>
+      <ul class="flower-tasks">
+        <li data-ru="🎯 Поиск лидов LinkedIn/Upwork" data-no="🎯 Leadgenerering LinkedIn/Upwork" data-en="🎯 Lead hunting LinkedIn/Upwork">🎯 Поиск лидов LinkedIn/Upwork</li>
+        <li data-ru="✉️ Холодные письма" data-no="✉️ Kalde e-poster" data-en="✉️ Cold emails">✉️ Холодные письма</li>
+        <li data-ru="🔁 Follow-up автоматизация" data-no="🔁 Automatisk oppfølging" data-en="🔁 Follow-up automation">🔁 Follow-up автоматизация</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('outreach')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+    <div class="flower-card" style="--fc:rgba(180,130,255,0.1)">
+      <span class="flower-status s-beta" data-ru="Бета" data-no="Beta" data-en="Beta">Бета</span>
+      <span class="flower-emoji">🎬🌷</span>
+      <div class="flower-name" data-ru="Видео-резчик" data-no="Videoklippekspert" data-en="Video Cutter">Видео-резчик</div>
+      <div class="flower-code">Agent 05 · Tulipa Reels</div>
+      <p class="flower-desc" data-ru="Режет длинные видео на Shorts, субтитры, хэштеги, публикует по расписанию." data-no="Klipper videoer til Shorts med undertekster og publiserer etter plan." data-en="Cuts videos into Shorts, adds subtitles, hashtags, publishes on schedule.">Режет длинные видео на Shorts, субтитры, хэштеги, публикует по расписанию.</p>
+      <ul class="flower-tasks">
+        <li data-ru="✂️ Авто-нарезка хайлайтов" data-no="✂️ Automatisk klipping" data-en="✂️ Auto highlight cutting">✂️ Авто-нарезка хайлайтов</li>
+        <li data-ru="💬 Субтитры RU/NO/EN" data-no="💬 Undertekster RU/NO/EN" data-en="💬 Subtitles RU/NO/EN">💬 Субтитры RU/NO/EN</li>
+        <li data-ru="📱 Shorts / TikTok / Reels" data-no="📱 Shorts / TikTok / Reels" data-en="📱 Shorts / TikTok / Reels">📱 Shorts / TikTok / Reels</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('video')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+    <div class="flower-card" style="--fc:rgba(100,180,255,0.1)">
+      <span class="flower-status s-soon" data-ru="Скоро" data-no="Kommer snart" data-en="Soon">Скоро</span>
+      <span class="flower-emoji">🧠🔮</span>
+      <div class="flower-name" data-ru="ИИ-аналитик" data-no="AI-analytiker" data-en="AI Analyst">ИИ-аналитик</div>
+      <div class="flower-code">Agent 06 · Iris Intelligence</div>
+      <p class="flower-desc" data-ru="Анализирует данные всего сада, строит отчёты, предсказывает возможности и риски." data-no="Analyserer alle hagedata, bygger rapporter og forutsier muligheter." data-en="Analyses garden data, builds reports, predicts opportunities and risks.">Анализирует данные всего сада, строит отчёты, предсказывает возможности и риски.</p>
+      <ul class="flower-tasks">
+        <li data-ru="📊 Дашборд всех агентов" data-no="📊 Dashbord for alle agenter" data-en="📊 All-agents dashboard">📊 Дашборд всех агентов</li>
+        <li data-ru="⚠️ Риск-мониторинг" data-no="⚠️ Risikoovervåking" data-en="⚠️ Risk monitoring">⚠️ Риск-мониторинг</li>
+        <li data-ru="📈 Прогнозы дохода 7/30/90д" data-no="📈 Inntektsprognoser 7/30/90d" data-en="📈 Income forecasts 7/30/90d">📈 Прогнозы дохода 7/30/90д</li>
+      </ul>
+      <button class="flower-detail-btn" onclick="openAgentPage('analyst')" data-ru="→ Подробнее об агенте" data-no="→ Les mer om agenten" data-en="→ Agent Details">→ Подробнее об агенте</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-wrap" id="how">
+  <div class="how-inner">
+    <div class="section-tag" data-ru="🔧 Как работает" data-no="🔧 Slik fungerer det" data-en="🔧 How it works">🔧 Как работает</div>
+    <h2 class="section-title">Четыре шага<br><em>до автоматического дохода.</em></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div><div class="step-icon">🌱</div>
+        <div class="step-title" data-ru="Посади агентов" data-no="Plant agentene" data-en="Plant Agents">Посади агентов</div>
+        <p class="step-text" data-ru="Выбери нужные цветки под свои цели — контент, трейдинг, автоматизация." data-no="Velg blomstene som passer dine mål." data-en="Pick agents matching your goals.">Выбери нужные цветки под свои цели — контент, трейдинг, автоматизация.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div><div class="step-icon">⚙️</div>
+        <div class="step-title" data-ru="Настрой сад" data-no="Konfigurer hagen" data-en="Configure Garden">Настрой сад</div>
+        <p class="step-text" data-ru="Подключи Stripe, Make.com, Binance, YouTube за 10 минут." data-no="Koble til Stripe, Make.com, Binance, YouTube på 10 minutter." data-en="Connect Stripe, Make.com, Binance, YouTube in 10 minutes.">Подключи Stripe, Make.com, Binance, YouTube за 10 минут.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div><div class="step-icon">🌸</div>
+        <div class="step-title" data-ru="Сад расцветает" data-no="Hagen blomstrer" data-en="Garden Blooms">Сад расцветает</div>
+        <p class="step-text" data-ru="Агенты работают 24/7 — публикуют, торгуют, пишут, находят клиентов." data-no="Agentene jobber 24/7 — publiserer, handler, skriver, finner kunder." data-en="Agents work 24/7 — publish, trade, write, find clients.">Агенты работают 24/7 — публикуют, торгуют, пишут, находят клиентов.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div><div class="step-icon">💰</div>
+        <div class="step-title" data-ru="Собери урожай" data-no="Høst inntekten" data-en="Harvest Income">Собери урожай</div>
+        <p class="step-text" data-ru="ИИ-аналитик показывает что работает. Масштабируй — сад зарабатывает больше." data-no="AI-analytikeren viser hva som fungerer. Skaler — hagen tjener mer." data-en="AI Analyst shows what works. Scale — the garden earns more.">ИИ-аналитик показывает что работает. Масштабируй — сад зарабатывает больше.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-wrap" id="pricing">
+  <div class="pricing-inner">
+    <div class="section-tag" data-ru="💎 Тарифы" data-no="💎 Priser" data-en="💎 Pricing">💎 Тарифы</div>
+    <h2 class="section-title">Начни с одного цветка.<br><em>Вырасти до целого сада.</em></h2>
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-name">🌱 <span data-ru="Росток" data-no="Spire" data-en="Sprout">Росток</span></div>
+        <div class="plan-price"><sup>kr</sup>149</div>
+        <div class="plan-period" data-ru="в месяц · 1 агент" data-no="per måned · 1 agent" data-en="per month · 1 agent">в месяц · 1 агент</div>
+        <ul class="plan-features">
+          <li data-ru="1 агент на выбор" data-no="1 valgfri agent" data-en="1 agent of choice">1 агент на выбор</li>
+          <li data-ru="Базовые автоматизации" data-no="Grunnleggende automatisering" data-en="Basic automations">Базовые автоматизации</li>
+          <li data-ru="Email поддержка" data-no="E-poststøtte" data-en="Email support">Email поддержка</li>
+          <li data-ru="🇳🇴 Норвежский налоговый отчёт" data-no="🇳🇴 Norsk skatterapport" data-en="🇳🇴 Norwegian tax report">🇳🇴 Норвежский налоговый отчёт</li>
+        </ul>
+        <button class="plan-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="Выбрать" data-no="Velg" data-en="Select">Выбрать</button>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge" data-ru="Популярный" data-no="Populær" data-en="Popular">Популярный</div>
+        <div class="plan-name">🌿 <span data-ru="Сад" data-no="Hage" data-en="Garden">Сад</span></div>
+        <div class="plan-price"><sup>kr</sup>349</div>
+        <div class="plan-period" data-ru="в месяц · 3 агента" data-no="per måned · 3 agenter" data-en="per month · 3 agents">в месяц · 3 агента</div>
+        <ul class="plan-features">
+          <li data-ru="3 агента на выбор" data-no="3 valgfrie agenter" data-en="3 agents of choice">3 агента на выбор</li>
+          <li data-ru="Make.com интеграция" data-no="Make.com integrasjon" data-en="Make.com integration">Make.com интеграция</li>
+          <li data-ru="📊 Аналитика и P&amp;L" data-no="📊 Analyse og P&amp;L" data-en="📊 Analytics &amp; P&amp;L">📊 Аналитика и P&amp;L</li>
+          <li data-ru="💳 Stripe монетизация" data-no="💳 Stripe monetisering" data-en="💳 Stripe monetisation">💳 Stripe монетизация</li>
+          <li data-ru="⚡ Приоритетная поддержка" data-no="⚡ Prioritetsstøtte" data-en="⚡ Priority support">⚡ Приоритетная поддержка</li>
+        </ul>
+        <button class="plan-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="Начать" data-no="Kom i gang" data-en="Get Started">Начать</button>
+      </div>
+      <div class="plan">
+        <div class="plan-name">🌺 <span data-ru="Полный сад" data-no="Full hage" data-en="Full Garden">Полный сад</span></div>
+        <div class="plan-price"><sup>kr</sup>699</div>
+        <div class="plan-period" data-ru="в месяц · все агенты" data-no="per måned · alle agenter" data-en="per month · all agents">в месяц · все агенты</div>
+        <ul class="plan-features">
+          <li data-ru="🌸 Все 6 агентов" data-no="🌸 Alle 6 agenter" data-en="🌸 All 6 agents">🌸 Все 6 агентов</li>
+          <li data-ru="🧠 ИИ-аналитик включён" data-no="🧠 AI-analytiker inkludert" data-en="🧠 AI Analyst included">🧠 ИИ-аналитик включён</li>
+          <li data-ru="♾️ Безлимитные автоматизации" data-no="♾️ Ubegrenset automatisering" data-en="♾️ Unlimited automations">♾️ Безлимитные автоматизации</li>
+          <li data-ru="🎯 Персональный онбординг" data-no="🎯 Personlig onboarding" data-en="🎯 Personal onboarding">🎯 Персональный онбординг</li>
+          <li data-ru="🔌 API доступ" data-no="🔌 API-tilgang" data-en="🔌 API access">🔌 API доступ</li>
+        </ul>
+        <button class="plan-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="Выбрать" data-no="Velg" data-en="Select">Выбрать</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WAITLIST -->
+<section class="waitlist-wrap" id="waitlist">
+  <div class="waitlist-inner">
+    <div class="section-tag" style="text-align:center" data-ru="🌱 Ранний доступ" data-no="🌱 Tidlig tilgang" data-en="🌱 Early Access">🌱 Ранний доступ</div>
+    <h2 class="section-title">Войди в сад<br><em>первым.</em></h2>
+    <div id="wl-form-wrap">
+      <div class="waitlist-form">
+        <div class="wl-row">
+          <input class="wl-input" id="wl-name" type="text" placeholder="Имя / Navn / Name" autocomplete="off">
+          <input class="wl-input" id="wl-email" type="email" placeholder="Email">
+        </div>
+        <div class="wl-row">
+          <select class="wl-select" id="wl-agent">
+            <option value="" disabled selected data-ru="Какой агент нужен?" data-no="Hvilken agent?" data-en="Which agent?">Какой агент нужен?</option>
+            <option value="content">✍️🌸 Контент-мастер</option>
+            <option value="crypto">📊🌻 Крипто-трейдер</option>
+            <option value="auto">⚙️🌿 Автоматизатор</option>
+            <option value="outreach">🤝🌺 Аутрич-охотник</option>
+            <option value="video">🎬🌷 Видео-резчик</option>
+            <option value="analyst">🧠🔮 ИИ-аналитик</option>
+            <option value="all">🌸 Все агенты</option>
+          </select>
+          <select class="wl-select" id="wl-plan">
+            <option value="" disabled selected>Тариф / Plan</option>
+            <option value="sprout">🌱 Росток — kr149/мес</option>
+            <option value="garden">🌿 Сад — kr349/мес</option>
+            <option value="full">🌺 Полный сад — kr699/мес</option>
+          </select>
+        </div>
+        <button class="wl-submit" onclick="submitWaitlist()" data-ru="🌸 Вступить в сад" data-no="🌸 Bli med i hagen" data-en="🌸 Join the Garden">🌸 Вступить в сад</button>
+        <p class="wl-note" data-ru="Никакого спама. Ранние участники получают 30% скидку на первый месяц." data-no="Ingen spam. Tidlige deltagere får 30% rabatt på første måned." data-en="No spam. Early members get 30% off first month.">Никакого спама. Ранние участники получают 30% скидку на первый месяц.</p>
+      </div>
+    </div>
+    <div class="wl-success" id="wl-success">
+      <span class="big-emoji">🌸</span>
+      <h3 id="wl-success-title">Добро пожаловать в сад!</h3>
+      <p id="wl-success-text">Мы напишем тебе на email как только откроется доступ. Ранняя скидка 30% зафиксирована.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Blomster <em>Hage</em></div>
+  <p class="footer-copy" data-ru="© 2026 · Сад ИИ-агентов · Норвегия 🇳🇴" data-no="© 2026 · AI-agenthage · Norge 🇳🇴" data-en="© 2026 · AI Agent Garden · Norway 🇳🇴">© 2026 · Сад ИИ-агентов · Норвегия 🇳🇴</p>
+</footer>
+
+</div><!-- end main-content -->
+
+<!-- AGENT DETAIL PAGE -->
+<div class="agent-page" id="agent-page">
+  <div class="agent-page-inner">
+    <button class="agent-back" onclick="closeAgentPage()">← <span data-ru="Вернуться в сад" data-no="Tilbake til hagen" data-en="Back to Garden">Вернуться в сад</span></button>
+    <div class="agent-hero">
+      <div>
+        <span class="agent-big-emoji" id="ap-emoji"></span>
+        <h1 class="agent-page-title" id="ap-title"></h1>
+        <div class="agent-page-code" id="ap-code"></div>
+        <p class="agent-page-desc" id="ap-desc"></p>
+        <span class="agent-page-status" id="ap-status"></span>
+      </div>
+      <div>
+        <div class="agent-metrics" id="ap-metrics"></div>
+      </div>
+    </div>
+    <div class="agent-tasks-full" id="ap-tasks"></div>
+    <div class="agent-cta-row">
+      <button class="btn-primary" onclick="document.getElementById('agent-page').classList.remove('open');document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})" data-ru="🌸 Активировать агента" data-no="🌸 Aktiver agenten" data-en="🌸 Activate Agent">🌸 Активировать агента</button>
+      <button class="btn-ghost" onclick="closeAgentPage()" data-ru="← Назад" data-no="← Tilbake" data-en="← Back">← Назад</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<button class="chat-toggle" onclick="toggleChat()" id="chat-toggle-btn" title="Chat with Garden AI">🌸</button>
+<div class="chat-window" id="chat-window">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <span class="chat-avatar">🌿</span>
+      <div>
+        <div class="chat-header-name">Garden AI</div>
+        <div class="chat-header-status" data-ru="онлайн · Blomster Hage" data-no="online · Blomster Hage" data-en="online · Blomster Hage">онлайн · Blomster Hage</div>
+      </div>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">×</button>
+  </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="msg agent" id="welcome-msg">🌸 Привет! Я Garden AI — помогу выбрать агентов и настроить твой автоматизированный доход в Норвегии. Что тебя интересует?</div>
+  </div>
+  <div class="chat-suggestions" id="chat-sugs">
+    <button class="chat-sug" onclick="sendSug(this.textContent)">Какой агент мне подходит?</button>
+    <button class="chat-sug" onclick="sendSug(this.textContent)">Как заработать на крипто?</button>
+    <button class="chat-sug" onclick="sendSug(this.textContent)">Цены и тарифы</button>
+  </div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chat-input" placeholder="Написать..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+    <button class="chat-send" onclick="sendChat()">↑</button>
+  </div>
+</div>
+
+<script>
+// ── CURSOR ──
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';ring.style.left=e.clientX+'px';ring.style.top=e.clientY+'px';});
+document.querySelectorAll('a,button,.flower-card,.plan,.agent-task-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='44px';ring.style.height='44px';ring.style.borderColor='rgba(201,169,110,0.5)';});
+  el.addEventListener('mouseleave',()=>{ring.style.width='30px';ring.style.height='30px';ring.style.borderColor='rgba(201,169,110,0.22)';});
+});
+
+// ── PARTICLES ──
+(function(){
+  const canvas=document.getElementById('particles-canvas');
+  const ctx=canvas.getContext('2d');
+  let W,H,particles=[];
+  function resize(){W=canvas.width=canvas.offsetWidth;H=canvas.height=canvas.offsetHeight;}
+  resize();window.addEventListener('resize',resize);
+  const colors=['rgba(201,169,110,', 'rgba(255,182,193,', 'rgba(147,200,180,', 'rgba(180,140,220,'];
+  for(let i=0;i<60;i++){
+    particles.push({
+      x:Math.random()*2000,y:Math.random()*800,
+      r:Math.random()*2+0.5,
+      vx:(Math.random()-.5)*0.3,vy:(Math.random()-.5)*0.2,
+      alpha:Math.random()*0.4+0.1,
+      color:colors[Math.floor(Math.random()*colors.length)],
+      pulse:Math.random()*Math.PI*2,
+      pulseSpeed:Math.random()*0.01+0.005
+    });
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{
+      p.pulse+=p.pulseSpeed;
+      const a=p.alpha*(0.7+0.3*Math.sin(p.pulse));
+      ctx.beginPath();ctx.arc(p.x%W,p.y%H,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color+a+')';ctx.fill();
+      // connections
+      particles.forEach(p2=>{
+        const dx=p.x-p2.x,dy=p.y-p2.y,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<120){
+          ctx.beginPath();ctx.moveTo(p.x%W,p.y%H);ctx.lineTo(p2.x%W,p2.y%H);
+          ctx.strokeStyle='rgba(201,169,110,'+(0.04*(1-dist/120))+')';ctx.lineWidth=.5;ctx.stroke();
+        }
+      });
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x+=W;if(p.x>W)p.x-=W;
+      if(p.y<0)p.y+=H;if(p.y>H)p.y-=H;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── LANG ──
+let lang='ru';
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===l));
+  document.querySelectorAll('[data-'+l+']').forEach(el=>{el.textContent=el.getAttribute('data-'+l);});
+  const wm=document.getElementById('welcome-msg');
+  if(l==='ru')wm.textContent='🌸 Привет! Я Garden AI — помогу выбрать агентов и настроить твой автоматизированный доход в Норвегии. Что тебя интересует?';
+  else if(l==='no')wm.textContent='🌸 Hei! Jeg er Garden AI — hjelper deg velge agenter og sette opp automatisert inntekt i Norge. Hva er du interessert i?';
+  else wm.textContent='🌸 Hi! I\'m Garden AI — I\'ll help you choose agents and set up automated income in Norway. What interests you?';
+}
+
+// ── AGENT DATA ──
+const agents={
+  content:{emoji:'✍️🌸',title:{ru:'Контент-мастер',no:'Innholdsekspert',en:'Content Master'},code:'Agent 01 · Rosa Damascena',
+    status:{ru:'Активен',no:'Aktiv',en:'Active'},statusClass:'s-active',
+    desc:{ru:'Генерирует продающие тексты, посты, статьи и email-рассылки. Обучается твоему стилю и работает полностью на автопилоте 24/7. Идеально для фрилансеров и онлайн-бизнеса.',
+          no:'Genererer salgstekster, innlegg og kampanjer. Lærer din skrivestil og jobber på autopilot 24/7.',
+          en:'Generates sales copy, posts, articles and email campaigns. Learns your voice and works on autopilot 24/7.'},
+    metrics:[{num:'5×',label:{ru:'Быстрее написания',no:'Raskere skriving',en:'Faster writing'}},{num:'∞',label:{ru:'Языков',no:'Språk',en:'Languages'}},{num:'24/7',label:{ru:'Работает',no:'Aktiv',en:'Active'}}],
+    tasks:[
+      {icon:'📝',title:{ru:'Социальные сети',no:'Sosiale medier',en:'Social Media'},desc:{ru:'Посты для Instagram, LinkedIn, Telegram. Авто-публикация по расписанию.',no:'Innlegg for Instagram, LinkedIn, Telegram med autopublisering.',en:'Posts for Instagram, LinkedIn, Telegram with auto-publishing.'}},
+      {icon:'📧',title:{ru:'Email-воронки',no:'E-posttrakter',en:'Email Funnels'},desc:{ru:'Полные серии писем, onboarding-рассылки, follow-up автоматизации.',no:'Komplette e-postserier og onboarding-kampanjer.',en:'Complete email series, onboarding drips, follow-up automations.'}},
+      {icon:'🔍',title:{ru:'SEO-контент',no:'SEO-innhold',en:'SEO Content'},desc:{ru:'Статьи с ключевиками, оптимизация для Google. Органический трафик на автопилоте.',no:'Artikler med nøkkelord og Google-optimalisering.',en:'Keyword-optimised articles for organic Google traffic.'}},
+      {icon:'🛒',title:{ru:'Продажи',no:'Salg',en:'Sales Copy'},desc:{ru:'Лендинги, описания товаров, CTA-тексты, A/B тест заголовков.',no:'Landingssider, produktbeskrivelser og A/B-testing.',en:'Landing pages, product descriptions, CTAs, A/B headline tests.'}}
+    ]},
+  crypto:{emoji:'📊🌻',title:{ru:'Крипто-трейдер',no:'Krypto-trader',en:'Crypto Trader'},code:'Agent 02 · Helianthus',
+    status:{ru:'Активен',no:'Aktiv',en:'Active'},statusClass:'s-active',
+    desc:{ru:'Мониторит крипто и форекс рынки в реальном времени. Находит арбитраж между биржами, генерирует EMA/RSI сигналы. Полностью оптимизирован под норвежские NOK-пары и налоговое законодательство.',
+          no:'Overvåker krypto og forex i sanntid. Finner arbitrasje og genererer signaler optimalisert for norske NOK-par.',
+          en:'Monitors crypto & forex in real-time. Finds arbitrage, generates signals optimised for Norwegian NOK pairs.'},
+    metrics:[{num:'3×',label:{ru:'Биржи',no:'Børser',en:'Exchanges'}},{num:'<1s',label:{ru:'Задержка',no:'Forsinkelse',en:'Latency'}},{num:'NOK',label:{ru:'Ориентирован',no:'Fokusert',en:'Focused'}}],
+    tasks:[
+      {icon:'💹',title:{ru:'Арбитраж',no:'Arbitrasje',en:'Arbitrage'},desc:{ru:'Отслеживает расхождения цен между Binance, Bybit и Revolut. Алерты в реальном времени.',no:'Sporer prisforskjeller mellom Binance, Bybit og Revolut.',en:'Tracks price gaps between Binance, Bybit, Revolut. Real-time alerts.'}},
+      {icon:'📈',title:{ru:'Технические индикаторы',no:'Tekniske indikatorer',en:'Technical Indicators'},desc:{ru:'EMA, RSI, MACD сигналы по всем основным парам включая NOK.',no:'EMA, RSI, MACD-signaler for alle viktige par inkludert NOK.',en:'EMA, RSI, MACD signals across all major pairs including NOK.'}},
+      {icon:'🇳🇴',title:{ru:'Норвежский P&L',no:'Norsk P&L',en:'Norwegian P&L'},desc:{ru:'Расчёт прибыли с учётом норвежского налогового кодекса. Отчёты для Skatteetaten.',no:'Beregner gevinst med norsk skattelov. Rapporter til Skatteetaten.',en:'P&L calculations with Norwegian tax law. Reports for Skatteetaten.'}},
+      {icon:'🔔',title:{ru:'Push-алерты',no:'Push-varsler',en:'Push Alerts'},desc:{ru:'Уведомления на телефон при достижении ключевых уровней или арбитражных возможностей.',no:'Varsler på telefon ved nøkkelnivåer eller arbitrasjemuligheter.',en:'Phone alerts when key levels hit or arbitrage opportunities arise.'}}
+    ]},
+  auto:{emoji:'⚙️🌿',title:{ru:'Автоматизатор',no:'Automatiseringsekspert',en:'Automator'},code:'Agent 03 · Fern Protocol',
+    status:{ru:'Активен',no:'Aktiv',en:'Active'},statusClass:'s-active',
+    desc:{ru:'Строит Make.com сценарии без кода, интегрирует сервисы и монетизирует через Stripe. Специалист по NOK Forex Newsletter и пассивным доходным воронкам.',
+          no:'Bygger Make.com-scenarier uten kode, integrerer tjenester og monetiserer via Stripe.',
+          en:'Builds Make.com scenarios without code, integrates services and monetises via Stripe.'},
+    metrics:[{num:'0',label:{ru:'Кода',no:'Kode',en:'Code'}},{num:'10м',label:{ru:'Настройка',no:'Oppsett',en:'Setup'}},{num:'∞',label:{ru:'Интеграций',no:'Integrasjoner',en:'Integrations'}}],
+    tasks:[
+      {icon:'🔗',title:{ru:'Make.com сценарии',no:'Make.com-scenarier',en:'Make.com Scenarios'},desc:{ru:'Готовые шаблоны для крипто-алертов, форекс-рассылок, лид-захвата и монетизации.',no:'Ferdige maler for kryptovarsel, forex-nyhetsbrev og leadfangst.',en:'Ready templates for crypto alerts, forex newsletters, lead capture and monetisation.'}},
+      {icon:'💰',title:{ru:'Stripe монетизация',no:'Stripe-monetisering',en:'Stripe Monetisation'},desc:{ru:'Подписки, one-time платежи, trial периоды. Всё настраивается за один сеанс.',no:'Abonnementer, engangsbetalinger og prøveperioder settes opp på én økt.',en:'Subscriptions, one-time payments, trial periods set up in one session.'}},
+      {icon:'📊',title:{ru:'NOK Forex Newsletter',no:'NOK Forex-nyhetsbrev',en:'NOK Forex Newsletter'},desc:{ru:'Автоматическая рассылка с курсами NOK/USD/EUR/GBP каждое утро. Монетизируется через Stripe.',no:'Automatisk daglig nyhetsbrev med NOK-kurser monetisert via Stripe.',en:'Daily automated newsletter with NOK rates. Monetised via Stripe.'}},
+      {icon:'🔄',title:{ru:'API интеграции',no:'API-integrasjoner',en:'API Integrations'},desc:{ru:'Подключает любые сервисы: Telegram, Notion, Airtable, Google Sheets, Slack, Discord.',no:'Kobler tjenester: Telegram, Notion, Airtable, Google Sheets, Slack.',en:'Connects any services: Telegram, Notion, Airtable, Google Sheets, Slack.'}}
+    ]},
+  outreach:{emoji:'🤝🌺',title:{ru:'Аутрич-охотник',no:'Oppsøkende agent',en:'Outreach Hunter'},code:'Agent 04 · Poppy Sales',
+    status:{ru:'Бета',no:'Beta',en:'Beta'},statusClass:'s-beta',
+    desc:{ru:'Находит потенциальных клиентов на фриланс-платформах, пишет персональные питчи, отправляет follow-up и автоматически закрывает сделки.',
+          no:'Finner potensielle kunder, skriver personlige pitcher og lukker frilansdeal automatisk.',
+          en:'Finds potential clients on freelance platforms, writes personalised pitches and closes deals automatically.'},
+    metrics:[{num:'10×',label:{ru:'Больше лидов',no:'Flere leads',en:'More leads'}},{num:'48ч',label:{ru:'Средний ответ',no:'Svar tid',en:'Avg reply'}},{num:'∞',label:{ru:'Платформ',no:'Plattformer',en:'Platforms'}}],
+    tasks:[
+      {icon:'🎯',title:{ru:'Поиск лидов',no:'Leadgenerering',en:'Lead Hunting'},desc:{ru:'Автоматический поиск на LinkedIn, Upwork, Fiverr по ключевым словам и бюджету.',no:'Automatisk søk på LinkedIn, Upwork, Fiverr etter nøkkelord og budsjett.',en:'Automated search on LinkedIn, Upwork, Fiverr by keywords and budget.'}},
+      {icon:'✉️',title:{ru:'Холодные письма',no:'Kalde e-poster',en:'Cold Emails'},desc:{ru:'Персональные письма на основе профиля клиента. Высокий open rate благодаря AI.',no:'Personlige e-poster basert på kundeprofil. Høy åpningsrate takket være AI.',en:'Personal emails based on client profile. High open rate thanks to AI.'}},
+      {icon:'📋',title:{ru:'Предложения',no:'Tilbud',en:'Proposals'},desc:{ru:'Автоматическая генерация профессиональных предложений и договоров под каждый проект.',no:'Automatisk generering av profesjonelle tilbud og kontrakter.',en:'Auto-generated professional proposals and contracts per project.'}},
+      {icon:'🔁',title:{ru:'Follow-up система',no:'Oppfølgingssystem',en:'Follow-up System'},desc:{ru:'Умные напоминания и серии писем. Не даёт лиду забыть о тебе.',no:'Smarte påminnelser og e-postserier som holder leaden varm.',en:'Smart reminders and email series that keep leads warm.'}}
+    ]},
+  video:{emoji:'🎬🌷',title:{ru:'Видео-резчик',no:'Videoklippekspert',en:'Video Cutter'},code:'Agent 05 · Tulipa Reels',
+    status:{ru:'Бета',no:'Beta',en:'Beta'},statusClass:'s-beta',
+    desc:{ru:'Режет длинные видео на вирусные Shorts, автоматически добавляет субтитры на 3 языках, хэштеги и публикует по расписанию на всех платформах.',
+          no:'Klipper lange videoer til virale Shorts med undertekster på 3 språk og publiserer etter plan.',
+          en:'Cuts long videos into viral Shorts, adds subtitles in 3 languages, hashtags and publishes on schedule.'},
+    metrics:[{num:'10×',label:{ru:'Видео из 1',no:'Videoer fra 1',en:'Videos from 1'}},{num:'3',label:{ru:'Языка субтитров',no:'Undertekstspråk',en:'Subtitle langs'}},{num:'∞',label:{ru:'Платформ',no:'Plattformer',en:'Platforms'}}],
+    tasks:[
+      {icon:'✂️',title:{ru:'Авто-нарезка',no:'Automatisk klipping',en:'Auto Cutting'},desc:{ru:'ИИ определяет лучшие моменты видео и нарезает до 10 Shorts из одного видео.',no:'AI finner de beste øyeblikkene og klipper opptil 10 Shorts fra én video.',en:'AI finds the best moments and cuts up to 10 Shorts from one video.'}},
+      {icon:'💬',title:{ru:'Субтитры 3 языка',no:'Undertekster 3 språk',en:'3-language Subtitles'},desc:{ru:'Автоматические субтитры на русском, норвежском и английском. С форматированием.',no:'Automatiske undertekster på russisk, norsk og engelsk med formatering.',en:'Auto subtitles in Russian, Norwegian and English with styling.'}},
+      {icon:'#️⃣',title:{ru:'SEO для видео',no:'Video-SEO',en:'Video SEO'},desc:{ru:'Авто-генерация хэштегов, описаний и тайтлов оптимизированных под алгоритмы.',no:'Automatisk generering av hashtager og beskrivelser optimalisert for algoritmer.',en:'Auto-generated hashtags and descriptions optimised for algorithms.'}},
+      {icon:'📅',title:{ru:'Авто-публикация',no:'Autopublisering',en:'Auto-publishing'},desc:{ru:'Расписание публикаций для YouTube Shorts, TikTok и Instagram Reels одновременно.',no:'Publiseringsplan for YouTube Shorts, TikTok og Instagram Reels samtidig.',en:'Publishing schedule for YouTube Shorts, TikTok and Instagram Reels simultaneously.'}}
+    ]},
+  analyst:{emoji:'🧠🔮',title:{ru:'ИИ-аналитик',no:'AI-analytiker',en:'AI Analyst'},code:'Agent 06 · Iris Intelligence',
+    status:{ru:'Скоро',no:'Kommer snart',en:'Coming Soon'},statusClass:'s-soon',
+    desc:{ru:'Центр управления всем садом. Анализирует данные всех 6 агентов в реальном времени, строит отчёты о доходах, выявляет риски и предсказывает возможности.',
+          no:'Kontrollsenteret for hele hagen. Analyserer data fra alle 6 agenter i sanntid og forutsier muligheter.',
+          en:'Garden control center. Analyses data from all 6 agents in real-time and predicts opportunities.'},
+    metrics:[{num:'6',label:{ru:'Агентов',no:'Agenter',en:'Agents'}},{num:'∞',label:{ru:'Данных',no:'Data',en:'Data'}},{num:'AI',label:{ru:'Движок',no:'Motor',en:'Engine'}}],
+    tasks:[
+      {icon:'📊',title:{ru:'Единый дашборд',no:'Samlet dashbord',en:'Unified Dashboard'},desc:{ru:'Все доходы, метрики и активность всех 6 агентов в одном месте.',no:'Alle inntekter, metrikker og aktivitet fra alle 6 agenter på ett sted.',en:'All income, metrics and activity from all 6 agents in one place.'}},
+      {icon:'💡',title:{ru:'Инсайты и рекомендации',no:'Innsikt og anbefalinger',en:'Insights & Recommendations'},desc:{ru:'ИИ анализирует паттерны и предлагает конкретные действия для роста дохода.',no:'AI analyserer mønstre og foreslår konkrete handlinger for inntektsvekst.',en:'AI analyses patterns and suggests concrete actions for income growth.'}},
+      {icon:'⚠️',title:{ru:'Риск-мониторинг',no:'Risikoovervåking',en:'Risk Monitoring'},desc:{ru:'Алерты при аномалиях, падениях дохода или угрозах безопасности аккаунтов.',no:'Varsler ved anomalier, inntektsfall eller sikkerhetstrusler.',en:'Alerts on anomalies, income drops or account security threats.'}},
+      {icon:'📈',title:{ru:'Прогнозы дохода',no:'Inntektsprognoser',en:'Income Forecasts'},desc:{ru:'Прогнозы на 7, 30 и 90 дней. Норвежский налоговый отчёт для Skatteetaten.',no:'Prognoser for 7, 30 og 90 dager. Norsk skatterapport til Skatteetaten.',en:'Forecasts for 7, 30 and 90 days. Norwegian tax report for Skatteetaten.'}}
+    ]}
+};
+
+// ── AGENT PAGE ──
+function openAgentPage(key){
+  const a=agents[key];
+  document.getElementById('ap-emoji').textContent=a.emoji;
+  document.getElementById('ap-title').textContent=a.title[lang]||a.title.ru;
+  document.getElementById('ap-code').textContent=a.code;
+  document.getElementById('ap-desc').textContent=a.desc[lang]||a.desc.ru;
+  const st=document.getElementById('ap-status');
+  st.textContent=a.status[lang]||a.status.ru;
+  st.className='agent-page-status '+a.statusClass;
+  const metrics=document.getElementById('ap-metrics');
+  metrics.innerHTML='';
+  a.metrics.forEach(m=>{
+    metrics.innerHTML+=`<div class="agent-metric"><div class="agent-metric-num">${m.num}</div><div class="agent-metric-label">${m.label[lang]||m.label.ru}</div></div>`;
+  });
+  const tasks=document.getElementById('ap-tasks');
+  tasks.innerHTML='';
+  a.tasks.forEach(t=>{
+    tasks.innerHTML+=`<div class="agent-task-item"><div class="agent-task-icon">${t.icon}</div><div><div class="agent-task-title">${t.title[lang]||t.title.ru}</div><p class="agent-task-desc">${t.desc[lang]||t.desc.ru}</p></div></div>`;
+  });
+  document.getElementById('agent-page').classList.add('open');
+  document.getElementById('agent-page').scrollTop=0;
+}
+function closeAgentPage(){document.getElementById('agent-page').classList.remove('open');}
+function showMain(){closeAgentPage();}
+
+// ── WAITLIST ──
+function submitWaitlist(){
+  const name=document.getElementById('wl-name').value.trim();
+  const email=document.getElementById('wl-email').value.trim();
+  if(!email||!email.includes('@')){document.getElementById('wl-email').style.borderColor='rgba(255,100,100,.5)';return;}
+  document.getElementById('wl-form-wrap').style.display='none';
+  const suc=document.getElementById('wl-success');
+  suc.style.display='block';
+  const titles={ru:`🌸 Добро пожаловать${name?' , '+name:''}!`,no:`🌸 Velkommen${name?', '+name:''}!`,en:`🌸 Welcome${name?', '+name:''}!`};
+  const texts={ru:'Мы напишем на email как только откроется доступ. Ранняя скидка 30% зафиксирована за тобой.',no:'Vi sender e-post når tilgangen åpnes. Tidlig rabatt på 30% er reservert.',en:"We'll email you when access opens. Your 30% early bird discount is locked in."};
+  document.getElementById('wl-success-title').textContent=titles[lang]||titles.ru;
+  document.getElementById('wl-success-text').textContent=texts[lang]||texts.ru;
+}
+
+// ── CHAT ──
+let chatOpen=false;
+let chatHistory=[{role:'assistant',content:'🌸 Привет! Я Garden AI — помогу выбрать агентов и настроить твой автоматизированный доход в Норвегии. Что тебя интересует?'}];
+
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chat-window').classList.toggle('open',chatOpen);
+  document.getElementById('chat-toggle-btn').textContent=chatOpen?'×':'🌸';
+}
+function sendSug(text){
+  document.getElementById('chat-input').value=text;
+  document.getElementById('chat-sugs').style.display='none';
+  sendChat();
+}
+async function sendChat(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text)return;
+  input.value='';
+  addMsg(text,'user');
+  chatHistory.push({role:'user',content:text});
+  const typingId='typing_'+Date.now();
+  addTyping(typingId);
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`Ты Garden AI — умный ассистент платформы Blomster Hage (Цветущий Сад) — системы ИИ-агентов для автоматизированного заработка в Норвегии.
+Платформа включает 6 агентов: ✍️🌸 Контент-мастер (Rosa Damascena), 📊🌻 Крипто-трейдер (Helianthus), ⚙️🌿 Автоматизатор (Fern Protocol), 🤝🌺 Аутрич-охотник (Poppy Sales), 🎬🌷 Видео-резчик (Tulipa Reels), 🧠🔮 ИИ-аналитик (Iris Intelligence).
+Тарифы: 🌱 Росток kr149/мес (1 агент), 🌿 Сад kr349/мес (3 агента), 🌺 Полный сад kr699/мес (все 6).
+Отвечай кратко, по делу, с характером. Используй эмоджи умеренно. Отвечай на том языке, на котором пишет пользователь (RU/NO/EN). Помогай выбрать агентов под конкретные задачи. Всегда направляй к регистрации в waitlist.`,
+        messages:chatHistory
+      })
+    });
+    removeTyping(typingId);
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'Что-то пошло не так 🌿 Попробуй ещё раз.';
+    addMsg(reply,'agent');
+    chatHistory.push({role:'assistant',content:reply});
+    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
+  }catch(e){
+    removeTyping(typingId);
+    addMsg('🌿 Сейчас нет соединения. Попробуй через секунду.',
+ 'agent');
+  }
+}
+function addMsg(text,role){
+  const div=document.createElement('div');
+  div.className='msg '+role;div.textContent=text;
+  document.getElementById('chat-messages').appendChild(div);
+  document.getElementById('chat-messages').scrollTop=99999;
+}
+function addTyping(id){
+  const div=document.createElement('div');div.className='msg agent typing';div.id=id;
+  div.innerHTML='<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  document.getElementById('chat-messages').appendChild(div);
+  document.getElementById('chat-messages').scrollTop=99999;
+}
+function removeTyping(id){const el=document.getElementById(id);if(el)el.remove();}
+
+// ── SCROLL ANIMATIONS ──
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}}),{threshold:.08});
+document.querySelectorAll('.flower-card,.step,.plan,.agent-task-item').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(24px)';el.style.transition='opacity .6s ease, transform .6s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>

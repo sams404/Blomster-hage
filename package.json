@@ -1,0 +1,18 @@
+{
+  "name": "blomster-hage",
+  "version": "1.0.0",
+  "description": "AI Agent Garden — automated income platform for Norway",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . --listen 3000 --no-clipboard",
+    "serve": "python3 -m http.server 8080",
+    "lint": "npx html-validate index.html blog.html admin.html intel.html",
+    "build": "echo 'Static site — no build needed. Deploy /blomster-hage folder.'"
+  },
+  "keywords": ["ai-agents", "automation", "norway", "freelance", "make.com"],
+  "author": "Blomster Hage",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}

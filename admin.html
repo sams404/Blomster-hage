@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blomster Hage · Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#060606;--s1:#0d0d0d;--s2:#111;--s3:#161616;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.1);
+  --text:#e2ddd5;--muted:rgba(226,221,213,0.4);--dim:rgba(226,221,213,0.18);
+  --gold:#c9a96e;--gold-dim:rgba(201,169,110,0.12);
+  --green:#6db87e;--green-dim:rgba(109,184,126,0.1);
+  --red:#c97a6e;--red-dim:rgba(201,122,110,0.1);
+  --blue:#6e9ec9;--blue-dim:rgba(110,158,201,0.1);
+  --purple:#a06ec9;--purple-dim:rgba(160,110,201,0.1);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:12px;line-height:1.5;overflow-x:hidden;}
+
+/* LAYOUT */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{background:var(--s1);border-right:1px solid var(--border);padding:0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow-y:auto;}
+.sb-logo{padding:24px 20px;border-bottom:1px solid var(--border);}
+.sb-logo-text{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:300;}
+.sb-logo-text em{color:var(--gold);font-style:italic;}
+.sb-logo-sub{font-size:9px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-top:3px;}
+.sb-section{padding:16px 0 4px;}
+.sb-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);padding:0 20px 8px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);font-size:11px;letter-spacing:.06em;cursor:pointer;transition:all .2s;border-left:2px solid transparent;}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.03);}
+.sb-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-dim);}
+.sb-item .icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sb-badge{margin-left:auto;background:var(--gold);color:var(--bg);font-size:9px;padding:2px 7px;border-radius:10px;}
+.sb-badge.new{background:var(--green);}
+.sb-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);}
+.sb-user{display:flex;align-items:center;gap:10px;}
+.sb-avatar{width:28px;height:28px;background:var(--gold-dim);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;}
+.sb-user-info{font-size:10px;}
+.sb-user-name{color:var(--text);}
+.sb-user-role{color:var(--dim);font-size:9px;letter-spacing:.1em;text-transform:uppercase;}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{padding:16px 32px;border-bottom:1px solid var(--border);background:rgba(6,6,6,0.95);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;}
+.topbar-title em{color:var(--gold);font-style:italic;}
+.topbar-actions{display:flex;align-items:center;gap:10px;}
+.tb-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;padding:7px 14px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.tb-btn:hover{border-color:var(--gold);color:var(--gold);}
+.tb-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.tb-btn.primary:hover{background:#d4b87e;}
+
+/* CONTENT AREA */
+.content{padding:28px 32px;flex:1;}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-bottom:24px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);padding:20px 22px;position:relative;overflow:hidden;}
+.stat-card::after{content:attr(data-icon);position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.12;}
+.sc-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.sc-num{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--text);line-height:1;}
+.sc-sub{font-size:10px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:5px;}
+.sc-delta{font-size:10px;padding:2px 7px;}
+.sc-delta.up{color:var(--green);background:var(--green-dim);}
+.sc-delta.down{color:var(--red);background:var(--red-dim);}
+
+/* MINI CHART */
+.mini-chart{display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:8px;}
+.mc-bar{flex:1;background:var(--gold-dim);border-top:1px solid rgba(201,169,110,.3);transition:background .2s;}
+.mc-bar:hover{background:rgba(201,169,110,.25);}
+
+/* GRID 2COL */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:2px;margin-bottom:24px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-bottom:24px;}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--border);padding:20px 22px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.card-title{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
+.card-action{font-size:10px;color:var(--gold);cursor:pointer;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;font-family:'DM Mono',monospace;}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);padding:0 0 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:300;}
+.tbl td{padding:11px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);vertical-align:middle;}
+.tbl tr:last-child td{border:none;}
+.tbl tr:hover td{color:var(--text);}
+.tbl .name{color:var(--text);}
+.badge{font-size:9px;letter-spacing:.1em;padding:3px 9px;border:1px solid;text-transform:uppercase;display:inline-block;}
+.badge-active{color:var(--green);border-color:rgba(109,184,126,.25);background:var(--green-dim);}
+.badge-pending{color:var(--gold);border-color:rgba(201,169,110,.25);background:var(--gold-dim);}
+.badge-new{color:var(--blue);border-color:rgba(110,158,201,.25);background:var(--blue-dim);}
+.badge-soon{color:var(--dim);border-color:var(--border);}
+.plan-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:middle;}
+.dot-sprout{background:#6db87e;}
+.dot-garden{background:var(--gold);}
+.dot-full{background:var(--purple);}
+
+/* AGENT BARS */
+.agent-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.agent-bar-row:last-child{margin-bottom:0;}
+.ab-emoji{font-size:16px;width:24px;text-align:center;flex-shrink:0;}
+.ab-name{font-size:11px;color:var(--muted);width:140px;flex-shrink:0;}
+.ab-track{flex:1;background:var(--s2);height:4px;position:relative;}
+.ab-fill{height:100%;background:var(--gold);transition:width .6s ease;}
+.ab-num{font-size:10px;color:var(--dim);width:30px;text-align:right;}
+
+/* REVENUE CHART */
+.rev-chart{display:flex;align-items:flex-end;gap:6px;height:80px;padding-top:8px;}
+.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.rev-bar{width:100%;background:var(--gold-dim);border-top:1px solid rgba(201,169,110,.4);transition:all .4s;}
+.rev-bar:hover{background:rgba(201,169,110,.22);}
+.rev-label{font-size:9px;color:var(--dim);letter-spacing:.06em;}
+.rev-val{font-size:9px;color:var(--gold);}
+
+/* MESSAGES */
+.msg-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;}
+.msg-item:last-child{border:none;}
+.msg-avatar{font-size:18px;flex-shrink:0;}
+.msg-name{font-size:11px;color:var(--text);margin-bottom:3px;}
+.msg-text{font-size:11px;color:var(--muted);line-height:1.55;}
+.msg-time{font-size:9px;color:var(--dim);margin-top:4px;}
+.msg-unread{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:6px;}
+
+/* WAITLIST TABLE */
+.wl-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.wl-search{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:9px 14px;outline:none;transition:border-color .2s;}
+.wl-search:focus{border-color:var(--gold);}
+.wl-search::placeholder{color:var(--dim);}
+.wl-filter-sel{background:var(--s2);border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;padding:9px 12px;outline:none;cursor:pointer;}
+.row-check{width:14px;height:14px;accent-color:var(--gold);cursor:pointer;}
+.action-btn{background:none;border:1px solid var(--border);color:var(--dim);font-family:'DM Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;transition:all .2s;letter-spacing:.1em;text-transform:uppercase;}
+.action-btn:hover{border-color:var(--gold);color:var(--gold);}
+.action-btn.danger:hover{border-color:var(--red);color:var(--red);}
+.bulk-bar{background:var(--s2);border:1px solid var(--border);padding:10px 14px;display:none;align-items:center;gap:12px;margin-bottom:12px;}
+.bulk-bar.show{display:flex;}
+.bulk-count{font-size:10px;color:var(--gold);letter-spacing:.1em;}
+
+/* EMAIL COMPOSER */
+.compose-area{display:flex;flex-direction:column;gap:12px;}
+.compose-input{background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:11px 14px;outline:none;transition:border-color .2s;width:100%;}
+.compose-input:focus{border-color:var(--gold);}
+.compose-textarea{min-height:160px;resize:vertical;}
+.compose-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.segment-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.seg-tag{background:var(--s2);border:1px solid var(--border);color:var(--muted);font-size:9px;letter-spacing:.12em;padding:5px 12px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.seg-tag.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim);}
+.send-preview{background:var(--s2);border:1px solid var(--border);padding:16px;font-size:11px;color:var(--muted);line-height:1.7;max-height:200px;overflow-y:auto;}
+
+/* SETTINGS */
+.setting-row{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);gap:24px;}
+.setting-row:last-child{border:none;}
+.setting-info h4{font-size:11px;color:var(--text);margin-bottom:4px;letter-spacing:.04em;}
+.setting-info p{font-size:10px;color:var(--dim);line-height:1.6;}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--s2);border:1px solid var(--border);transition:.25s;}
+.toggle input:checked+.toggle-slider{background:var(--gold);border-color:var(--gold);}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:var(--dim);transition:.25s;}
+.toggle input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--bg);}
+.setting-input{background:var(--s2);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;padding:8px 12px;outline:none;width:200px;}
+.setting-input:focus{border-color:var(--gold);}
+
+/* NOTIFICATION */
+.notif{position:fixed;bottom:24px;right:24px;background:var(--s2);border:1px solid var(--border);padding:14px 20px;font-size:11px;color:var(--text);z-index:999;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.25,.46,.45,.94);display:flex;align-items:center;gap:10px;max-width:320px;}
+.notif.show{transform:translateY(0);opacity:1;}
+.notif-icon{font-size:16px;}
+
+/* PROGRESS RING */
+.progress-wrap{display:flex;align-items:center;gap:16px;}
+.progress-ring{position:relative;width:64px;height:64px;flex-shrink:0;}
+.progress-ring svg{transform:rotate(-90deg);}
+.progress-label{font-family:'Cormorant Garamond',serif;font-size:16px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--gold);}
+.progress-info h4{font-size:11px;color:var(--text);margin-bottom:4px;}
+.progress-info p{font-size:10px;color:var(--dim);line-height:1.6;}
+
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .stat-row{grid-template-columns:1fr 1fr;}
+  .grid-2,.grid-3{grid-template-columns:1fr;}
+  .content{padding:20px 16px;}
+  .topbar{padding:14px 16px;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">Blomster <em>Hage</em></div>
+    <div class="sb-logo-sub">Admin Panel v1.0</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Обзор</div>
+    <div class="sb-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Дашборд</div>
+    <div class="sb-item" onclick="showPanel('revenue',this)"><span class="icon">💰</span> Доход <span class="sb-badge">NOK</span></div>
+    <div class="sb-item" onclick="showPanel('agents',this)"><span class="icon">🌸</span> Агенты</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Waitlist</div>
+    <div class="sb-item" onclick="showPanel('waitlist',this)"><span class="icon">📋</span> Список <span class="sb-badge new" id="sb-new-count">12</span></div>
+    <div class="sb-item" onclick="showPanel('email',this)"><span class="icon">📧</span> Рассылка</div>
+    <div class="sb-item" onclick="showPanel('messages',this)"><span class="icon">💬</span> Сообщения <span class="sb-badge new">3</span></div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Контент</div>
+    <div class="sb-item" onclick="showPanel('blog',this)"><span class="icon">✍️</span> Блог / Кейсы</div>
+    <div class="sb-item" onclick="showPanel('roadmap',this)"><span class="icon">🗺</span> Roadmap</div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Система</div>
+    <div class="sb-item" onclick="showPanel('settings',this)"><span class="icon">⚙️</span> Настройки</div>
+  </div>
+
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-avatar">🌿</div>
+      <div class="sb-user-info">
+        <div class="sb-user-name">Admin</div>
+        <div class="sb-user-role">Owner · Norge 🇳🇴</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Дашборд <em>/ Overview</em></div>
+    <div class="topbar-actions">
+      <button class="tb-btn" onclick="exportCSV()">↓ CSV</button>
+      <button class="tb-btn" onclick="showPanel('email',document.querySelector('[onclick*=email]'))">📧 Рассылка</button>
+      <button class="tb-btn primary" onclick="notify('🌸 Сад в порядке — все агенты активны')">🌸 Статус</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="panel active" id="panel-dashboard">
+
+      <div class="stat-row">
+        <div class="stat-card" data-icon="📋">
+          <div class="sc-label">Waitlist всего</div>
+          <div class="sc-num" id="total-count">47</div>
+          <div class="sc-sub"><span class="sc-delta up">+12 за неделю</span></div>
+          <div class="mini-chart" id="chart-signups"></div>
+        </div>
+        <div class="stat-card" data-icon="💰">
+          <div class="sc-label">Потенц. MRR</div>
+          <div class="sc-num">kr <span id="mrr-val">16 503</span></div>
+          <div class="sc-sub"><span class="sc-delta up">+kr 4 247 за мес</span></div>
+          <div class="mini-chart" id="chart-mrr"></div>
+        </div>
+        <div class="stat-card" data-icon="🌸">
+          <div class="sc-label">Конверсия к цели</div>
+          <div class="sc-num"><span id="conv-pct">110</span>%</div>
+          <div class="sc-sub">цель kr 15 000/мес</div>
+        </div>
+        <div class="stat-card" data-icon="🤖">
+          <div class="sc-label">Активных агентов</div>
+          <div class="sc-num">3 <span style="font-size:16px;color:var(--muted)">/ 6</span></div>
+          <div class="sc-sub"><span class="sc-delta" style="color:var(--gold);background:var(--gold-dim)">2 в бете</span></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Waitlist by plan -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Waitlist по тарифам</span>
+            <button class="card-action" onclick="showPanel('waitlist',document.querySelector('[onclick*=waitlist]'))">Все →</button>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:11px"><span class="plan-dot dot-full"></span>🌺 Полный сад — kr 699</span>
+              <span style="font-size:11px;color:var(--gold)">8 чел · kr 5 592</span>
+            </div>
+            <div style="background:var(--s2);height:4px"><div style="height:100%;background:var(--purple);width:17%"></div></div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:11px"><span class="plan-dot dot-garden"></span>🌿 Сад — kr 349</span>
+              <span style="font-size:11px;color:var(--gold)">24 чел · kr 8 376</span>
+            </div>
+            <div style="background:var(--s2);height:4px"><div style="height:100%;background:var(--gold);width:51%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:11px"><span class="plan-dot dot-sprout"></span>🌱 Росток — kr 149</span>
+              <span style="font-size:11px;color:var(--gold)">15 чел · kr 2 235</span>
+            </div>
+            <div style="background:var(--s2);height:4px"><div style="height:100%;background:var(--green);width:32%"></div></div>
+          </div>
+          <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;display:flex;justify-content:space-between">
+            <span style="font-size:10px;color:var(--dim)">Итого · 47 человек</span>
+            <span style="font-size:11px;color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:16px">kr 16 203</span>
+          </div>
+        </div>
+
+        <!-- Revenue chart -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">💹 Рост MRR</span>
+            <span style="font-size:10px;color:var(--green)">↑ +34% MoM</span>
+          </div>
+          <div class="rev-chart" id="rev-chart"></div>
+          <div style="margin-top:16px;display:flex;gap:20px">
+            <div><div style="font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">Цель</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--text)">kr 15 000</div></div>
+            <div><div style="font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">Текущий</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold)">kr 16 203</div></div>
+            <div><div style="font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px">Остаток до цели</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--green)">✓ Достигнуто</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Agents interest -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">🌸 Интерес к агентам</span></div>
+          <div>
+            <div class="agent-bar-row"><span class="ab-emoji">⚙️🌿</span><span class="ab-name">Автоматизатор</span><div class="ab-track"><div class="ab-fill" style="width:82%"></div></div><span class="ab-num">38</span></div>
+            <div class="agent-bar-row"><span class="ab-emoji">📊🌻</span><span class="ab-name">Крипто-трейдер</span><div class="ab-track"><div class="ab-fill" style="width:74%"></div></div><span class="ab-num">35</span></div>
+            <div class="agent-bar-row"><span class="ab-emoji">✍️🌸</span><span class="ab-name">Контент-мастер</span><div class="ab-track"><div class="ab-fill" style="width:60%"></div></div><span class="ab-num">28</span></div>
+            <div class="agent-bar-row"><span class="ab-emoji">🤝🌺</span><span class="ab-name">Аутрич-охотник</span><div class="ab-track"><div class="ab-fill" style="width:45%"></div></div><span class="ab-num">21</span></div>
+            <div class="agent-bar-row"><span class="ab-emoji">🎬🌷</span><span class="ab-name">Видео-резчик</span><div class="ab-track"><div class="ab-fill" style="width:38%"></div></div><span class="ab-num">18</span></div>
+            <div class="agent-bar-row"><span class="ab-emoji">🧠🔮</span><span class="ab-name">ИИ-аналитик</span><div class="ab-track"><div class="ab-fill" style="width:26%"></div></div><span class="ab-num">12</span></div>
+          </div>
+        </div>
+
+        <!-- Recent signups -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🆕 Новые (сегодня)</span>
+            <button class="card-action" onclick="showPanel('waitlist',document.querySelector('[onclick*=waitlist]'))">Все →</button>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Имя</th><th>Тариф</th><th>Агент</th><th>Время</th></tr></thead>
+            <tbody id="recent-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Progress to goal -->
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header"><span class="card-title">🎯 Прогресс к kr 15 000 / мес</span><span style="font-size:10px;color:var(--green)">✓ Цель достигнута</span></div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px">
+          <div class="progress-wrap" style="padding:12px;background:var(--s2);border:1px solid var(--border)">
+            <div class="progress-ring"><svg width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--s1)" stroke-width="3"/><circle id="pr1" cx="32" cy="32" r="26" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="29"/></svg><div class="progress-label">83%</div></div>
+            <div class="progress-info"><h4>Waitlist заполнен</h4><p>47 из 60 слотов</p></div>
+          </div>
+          <div class="progress-wrap" style="padding:12px;background:var(--s2);border:1px solid var(--border)">
+            <div class="progress-ring"><svg width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--s1)" stroke-width="3"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--green)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="0"/></svg><div class="progress-label" style="color:var(--green)">✓</div></div>
+            <div class="progress-info"><h4>Доход достигнут</h4><p>kr 16 203 / мес</p></div>
+          </div>
+          <div class="progress-wrap" style="padding:12px;background:var(--s2);border:1px solid var(--border)">
+            <div class="progress-ring"><svg width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--s1)" stroke-width="3"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--blue)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="90"/></svg><div class="progress-label" style="color:var(--blue)">45%</div></div>
+            <div class="progress-info"><h4>Агенты онлайн</h4><p>3 из 6 активны</p></div>
+          </div>
+          <div class="progress-wrap" style="padding:12px;background:var(--s2);border:1px solid var(--border)">
+            <div class="progress-ring"><svg width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--s1)" stroke-width="3"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="65"/></svg><div class="progress-label">60%</div></div>
+            <div class="progress-info"><h4>Блог контент</h4><p>6 из 10 статей</p></div>
+          </div>
+          <div class="progress-wrap" style="padding:12px;background:var(--s2);border:1px solid var(--border)">
+            <div class="progress-ring"><svg width="64" height="64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--s1)" stroke-width="3"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--purple)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="130"/></svg><div class="progress-label" style="color:var(--purple)">20%</div></div>
+            <div class="progress-info"><h4>PWA готов</h4><p>В разработке</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!-- ── WAITLIST ── -->
+    <div class="panel" id="panel-waitlist">
+      <div class="wl-toolbar">
+        <input class="wl-search" id="wl-search" placeholder="🔍 Поиск по имени или email..." oninput="filterWL()">
+        <select class="wl-filter-sel" id="wl-plan-filter" onchange="filterWL()">
+          <option value="">Все тарифы</option>
+          <option value="full">🌺 Полный сад</option>
+          <option value="garden">🌿 Сад</option>
+          <option value="sprout">🌱 Росток</option>
+        </select>
+        <select class="wl-filter-sel" id="wl-status-filter" onchange="filterWL()">
+          <option value="">Все статусы</option>
+          <option value="new">🆕 Новые</option>
+          <option value="pending">⏳ Ожидают</option>
+          <option value="active">✅ Активные</option>
+        </select>
+        <button class="tb-btn" onclick="exportCSV()">↓ CSV</button>
+        <button class="tb-btn primary" onclick="showPanel('email',document.querySelector('[onclick*=email]'))">📧 Написать</button>
+      </div>
+      <div class="bulk-bar" id="bulk-bar">
+        <span class="bulk-count" id="bulk-count">0 выбрано</span>
+        <button class="action-btn" onclick="bulkEmail()">📧 Написать выбранным</button>
+        <button class="action-btn" onclick="bulkApprove()">✅ Активировать</button>
+        <button class="action-btn danger" onclick="bulkDelete()">✕ Удалить</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="tbl" style="padding:0">
+          <thead style="padding:0 16px">
+            <tr style="padding:0 16px">
+              <th style="padding:12px 16px"><input type="checkbox" class="row-check" id="check-all" onchange="toggleAll(this)"></th>
+              <th style="padding:12px 8px">#</th>
+              <th style="padding:12px 8px">Имя / Email</th>
+              <th style="padding:12px 8px">Тариф</th>
+              <th style="padding:12px 8px">Агент</th>
+              <th style="padding:12px 8px">Статус</th>
+              <th style="padding:12px 8px">Дата</th>
+              <th style="padding:12px 8px">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="wl-tbody" style="display:table-row-group"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-size:10px;color:var(--dim)">
+        <span id="wl-count-label">Показано 47 из 47</span>
+        <div style="display:flex;gap:8px">
+          <button class="action-btn">← Пред</button>
+          <button class="action-btn" style="border-color:var(--gold);color:var(--gold)">1</button>
+          <button class="action-btn">2 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EMAIL ── -->
+    <div class="panel" id="panel-email">
+      <div class="grid-2" style="margin-bottom:0">
+        <div class="card">
+          <div class="card-header"><span class="card-title">📧 Новое письмо</span></div>
+          <div class="compose-area">
+            <div>
+              <div style="font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:6px">Сегменты получателей</div>
+              <div class="segment-tags">
+                <span class="seg-tag active" onclick="this.classList.toggle('active')">🌸 Все (47)</span>
+                <span class="seg-tag" onclick="this.classList.toggle('active')">🌺 Полный сад (8)</span>
+                <span class="seg-tag" onclick="this.classList.toggle('active')">🌿 Сад (24)</span>
+                <span class="seg-tag" onclick="this.classList.toggle('active')">🌱 Росток (15)</span>
+                <span class="seg-tag" onclick="this.classList.toggle('active')">🆕 Новые (12)</span>
+              </div>
+            </div>
+            <input class="compose-input" id="email-subject" placeholder="Тема письма...">
+            <textarea class="compose-input compose-textarea" id="email-body" placeholder="Текст письма...
+
+Используй {{name}} для персонализации.
+Используй {{plan}} для тарифа.
+Используй {{agent}} для выбранного агента."></textarea>
+            <div class="compose-row">
+              <button class="tb-btn" onclick="previewEmail()">👁 Превью</button>
+              <button class="tb-btn primary" onclick="sendEmail()">📧 Отправить</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📋 Шаблоны</span></div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+            <button class="action-btn" style="text-align:left;padding:10px 14px" onclick="loadTemplate('welcome')">🌸 Приветствие нового участника</button>
+            <button class="action-btn" style="text-align:left;padding:10px 14px" onclick="loadTemplate('launch')">🚀 Анонс запуска</button>
+            <button class="action-btn" style="text-align:left;padding:10px 14px" onclick="loadTemplate('discount')">💎 Ранняя скидка 30%</button>
+            <button class="action-btn" style="text-align:left;padding:10px 14px" onclick="loadTemplate('case')">📊 Новый кейс в блоге</button>
+            <button class="action-btn" style="text-align:left;padding:10px 14px" onclick="loadTemplate('followup')">🔁 Follow-up (нет ответа 7 дней)</button>
+          </div>
+          <div class="card-header" style="margin-top:16px"><span class="card-title">📈 Последние отправки</span></div>
+          <table class="tbl">
+            <thead><tr><th>Тема</th><th>Отпр.</th><th>Open%</th></tr></thead>
+            <tbody>
+              <tr><td class="name">🌸 Добро пожаловать в сад!</td><td>47</td><td style="color:var(--green)">68%</td></tr>
+              <tr><td class="name">📊 Новый кейс: kr 4 820</td><td>35</td><td style="color:var(--green)">71%</td></tr>
+              <tr><td class="name">⚙️ Make.com шаблон</td><td>47</td><td style="color:var(--gold)">54%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" id="email-preview-card" style="margin-top:2px;display:none">
+        <div class="card-header"><span class="card-title">👁 Превью письма</span><button class="card-action" onclick="document.getElementById('email-preview-card').style.display='none'">Закрыть</button></div>
+        <div class="send-preview" id="email-preview"></div>
+      </div>
+    </div>
+
+    <!-- ── MESSAGES ── -->
+    <div class="panel" id="panel-messages">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">💬 Входящие от Garden AI</span><span class="sc-delta up" style="font-size:10px;padding:3px 8px">3 новых</span></div>
+          <div id="messages-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 Chat статистика</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--muted)">Всего диалогов</span><span style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold)">124</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--muted)">Конверсия в waitlist</span><span style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--green)">34%</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--muted)">Ср. длина диалога</span><span style="font-family:'Cormorant Garamond',serif;font-size:20px">6.2 сообщ.</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:var(--muted)">Топ вопрос</span><span style="font-size:11px;color:var(--muted);text-align:right;max-width:160px">"Какой агент мне подходит?"</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BLOG ── -->
+    <div class="panel" id="panel-blog">
+      <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card" data-icon="📖"><div class="sc-label">Статей опубликовано</div><div class="sc-num">6</div><div class="sc-sub"><span class="sc-delta up">+2 на этой неделе</span></div></div>
+        <div class="stat-card" data-icon="👁"><div class="sc-label">Просмотров всего</div><div class="sc-num">14.2K</div><div class="sc-sub"><span class="sc-delta up">+3.4K за неделю</span></div></div>
+        <div class="stat-card" data-icon="📧"><div class="sc-label">Подписчиков блога</div><div class="sc-num">89</div><div class="sc-sub"><span class="sc-delta up">+23 за неделю</span></div></div>
+        <div class="stat-card" data-icon="🔄"><div class="sc-label">Конверсия → Waitlist</div><div class="sc-num">18%</div><div class="sc-sub">из читателей</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📝 Статьи</span><button class="tb-btn primary" style="font-size:10px;padding:6px 14px">+ Новая статья</button></div>
+        <table class="tbl">
+          <thead><tr><th>Заголовок</th><th>Категория</th><th>Просмотры</th><th>Конверсия</th><th>Статус</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="name">Крипто-агент: kr 4 820 за месяц</td><td>📊 Крипто</td><td>1 240</td><td style="color:var(--green)">22%</td><td><span class="badge badge-active">Live</span></td><td><button class="action-btn">Ред.</button></td></tr>
+            <tr><td class="name">NOK Forex Newsletter на автопилоте</td><td>⚙️ Авто</td><td>876</td><td style="color:var(--green)">19%</td><td><span class="badge badge-active">Live</span></td><td><button class="action-btn">Ред.</button></td></tr>
+            <tr><td class="name">47 постов за неделю: +3 клиента</td><td>✍️ Контент</td><td>1 050</td><td style="color:var(--gold)">15%</td><td><span class="badge badge-active">Live</span></td><td><button class="action-btn">Ред.</button></td></tr>
+            <tr><td class="name">5 клиентов Upwork без писем</td><td>🤝 Фриланс</td><td>2 100</td><td style="color:var(--green)">24%</td><td><span class="badge badge-active">Live</span></td><td><button class="action-btn">Ред.</button></td></tr>
+            <tr><td class="name">Как ИИ-агент работает вместо тебя</td><td>🤖 ИИ</td><td>—</td><td>—</td><td><span class="badge badge-pending">Черновик</span></td><td><button class="action-btn">Ред.</button></td></tr>
+            <tr><td class="name">Make.com: арбитраж без кода</td><td>⚙️ Авто</td><td>4 200</td><td style="color:var(--green)">28%</td><td><span class="badge badge-active">Live</span></td><td><button class="action-btn">Ред.</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ROADMAP ── -->
+    <div class="panel" id="panel-roadmap">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🗺 Roadmap к kr 15 000/мес</span><span style="font-size:10px;color:var(--green)">✓ Цель достигнута досрочно</span></div>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;gap:20px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:80px;flex-shrink:0;font-size:10px;color:var(--dim);padding-top:2px">Месяц 1</div>
+            <div style="width:8px;flex-shrink:0;display:flex;flex-direction:column;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></div><div style="flex:1;width:1px;background:var(--border);margin-top:6px"></div></div>
+            <div><div style="font-size:11px;color:var(--text);margin-bottom:6px">🌸 Запуск сайта + Waitlist</div><div style="font-size:10px;color:var(--muted)">Blomster Hage v1, блог 6 статей, 47 участников в листе ожидания</div><div style="margin-top:8px"><span class="badge badge-active">✓ Выполнено</span></div></div>
+          </div>
+          <div style="display:flex;gap:20px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:80px;flex-shrink:0;font-size:10px;color:var(--dim);padding-top:2px">Месяц 2</div>
+            <div style="width:8px;flex-shrink:0;display:flex;flex-direction:column;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--gold);border:2px solid var(--gold);flex-shrink:0"></div><div style="flex:1;width:1px;background:var(--border);margin-top:6px"></div></div>
+            <div><div style="font-size:11px;color:var(--text);margin-bottom:6px">🚀 Запуск продукта + первые платежи</div><div style="font-size:10px;color:var(--muted)">Stripe интеграция, onboarding 10 первых клиентов, PWA дашборд</div><div style="margin-top:8px"><span class="badge badge-pending">В процессе</span></div></div>
+          </div>
+          <div style="display:flex;gap:20px;padding:16px 0;border-bottom:1px solid var(--border)">
+            <div style="width:80px;flex-shrink:0;font-size:10px;color:var(--dim);padding-top:2px">Месяц 3</div>
+            <div style="width:8px;flex-shrink:0;display:flex;flex-direction:column;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--border);border:1px solid var(--dim);flex-shrink:0"></div><div style="flex:1;width:1px;background:var(--border);margin-top:6px"></div></div>
+            <div><div style="font-size:11px;color:var(--muted);margin-bottom:6px">📈 Масштаб + Автозаработок</div><div style="font-size:10px;color:var(--dim)">100 подписчиков, ИИ-аналитик онлайн, пассивный доход kr 30 000+</div><div style="margin-top:8px"><span class="badge badge-soon">Цель</span></div></div>
+          </div>
+          <div style="display:flex;gap:20px;padding:16px 0">
+            <div style="width:80px;flex-shrink:0;font-size:10px;color:var(--dim);padding-top:2px">Далее</div>
+            <div style="width:8px;flex-shrink:0;align-items:center;display:flex"><div style="width:8px;height:8px;border-radius:50%;background:var(--purple-dim);border:1px solid var(--purple);flex-shrink:0"></div></div>
+            <div><div style="font-size:11px;color:var(--muted);margin-bottom:6px">🌺 Полная автономия</div><div style="font-size:10px;color:var(--dim)">Все 6 агентов работают самостоятельно. Доход без участия.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SETTINGS ── -->
+    <div class="panel" id="panel-settings">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚙️ Уведомления</span></div>
+          <div class="setting-row"><div class="setting-info"><h4>Новый участник waitlist</h4><p>Push при каждой новой регистрации</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><h4>Ежедневный отчёт</h4><p>Сводка в 9:00 каждый день</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><h4>Крипто-алерты</h4><p>При арбитраже > 0.5%</p></div><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></div>
+          <div class="setting-row"><div class="setting-info"><h4>Новые сообщения чата</h4><p>Уведомления от Garden AI</p></div><label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔧 Интеграции</span></div>
+          <div class="setting-row"><div class="setting-info"><h4>Stripe Secret Key</h4><p>Для приёма платежей</p></div><input class="setting-input" type="password" value="sk_test_••••••••••" placeholder="sk_..."></div>
+          <div class="setting-row"><div class="setting-info"><h4>Telegram Bot Token</h4><p>Для крипто-алертов</p></div><input class="setting-input" type="password" value="7284••••••••" placeholder="Bot token..."></div>
+          <div class="setting-row"><div class="setting-info"><h4>Make.com Webhook</h4><p>Для автоматизаций</p></div><input class="setting-input" type="text" value="https://hook.make.com/••••" placeholder="Webhook URL..."></div>
+          <div style="margin-top:16px"><button class="tb-btn primary" onclick="notify('✓ Настройки сохранены')">Сохранить</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AGENTS ── -->
+    <div class="panel" id="panel-agents">
+      <div class="grid-3">
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">✍️🌸</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">Контент-мастер</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Rosa Damascena</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge badge-active">Активен</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Интерес</span><span style="font-size:11px;color:var(--gold)">28 человек</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('⚙️ Настройка агента в разработке')">Настроить</button></div>
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">📊🌻</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">Крипто-трейдер</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Helianthus</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge badge-active">Активен</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--gold)">Доход</span><span style="font-size:11px;color:var(--green)">kr 4 820</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('⚙️ Настройка агента в разработке')">Настроить</button></div>
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">⚙️🌿</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">Автоматизатор</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Fern Protocol</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge badge-active">Активен</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--gold)">Доход</span><span style="font-size:11px;color:var(--green)">kr 2 100</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('⚙️ Настройка агента в разработке')">Настроить</button></div>
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">🤝🌺</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">Аутрич-охотник</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Poppy Sales</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge" style="color:var(--gold);border-color:rgba(201,169,110,.25);background:var(--gold-dim)">Бета</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Интерес</span><span style="font-size:11px;color:var(--gold)">21 человек</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('🌸 Запуск запланирован на след. месяц')">Детали</button></div>
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">🎬🌷</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">Видео-резчик</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Tulipa Reels</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge" style="color:var(--gold);border-color:rgba(201,169,110,.25);background:var(--gold-dim)">Бета</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Просмотры</span><span style="font-size:11px;color:var(--green)">12K</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('🌸 Запуск запланирован на след. месяц')">Детали</button></div>
+        <div class="card"><div style="font-size:36px;margin-bottom:12px">🧠🔮</div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;margin-bottom:4px">ИИ-аналитик</div><div style="font-size:9px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px">Iris Intelligence</div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Статус</span><span class="badge badge-soon">Скоро</span></div><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:11px;color:var(--muted)">Интерес</span><span style="font-size:11px;color:var(--gold)">12 человек</span></div><button class="tb-btn" style="width:100%;margin-top:12px" onclick="notify('🔮 Iris Intelligence — Q2 2026')">Детали</button></div>
+      </div>
+    </div>
+
+    <!-- ── REVENUE ── -->
+    <div class="panel" id="panel-revenue">
+      <div class="stat-row">
+        <div class="stat-card" data-icon="💰"><div class="sc-label">MRR текущий</div><div class="sc-num">kr 16 203</div><div class="sc-sub"><span class="sc-delta up">+34% MoM</span></div></div>
+        <div class="stat-card" data-icon="📈"><div class="sc-label">ARR прогноз</div><div class="sc-num">kr 194K</div><div class="sc-sub">при текущем росте</div></div>
+        <div class="stat-card" data-icon="👤"><div class="sc-label">ARPU</div><div class="sc-num">kr 344</div><div class="sc-sub">средний чек</div></div>
+        <div class="stat-card" data-icon="✨"><div class="sc-label">Churn (прогноз)</div><div class="sc-num">4.2%</div><div class="sc-sub"><span class="sc-delta" style="color:var(--green);background:var(--green-dim)">Норма &lt;5%</span></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">💹 Детализация дохода по источникам</span></div>
+        <table class="tbl">
+          <thead><tr><th>Источник</th><th>Подписчики</th><th>MRR</th><th>% от общего</th><th>Тренд</th></tr></thead>
+          <tbody>
+            <tr><td class="name">🌺 Полный сад (kr 699)</td><td>8</td><td style="color:var(--green)">kr 5 592</td><td>34.5%</td><td style="color:var(--green)">↑ +3</td></tr>
+            <tr><td class="name">🌿 Сад (kr 349)</td><td>24</td><td style="color:var(--green)">kr 8 376</td><td>51.7%</td><td style="color:var(--green)">↑ +7</td></tr>
+            <tr><td class="name">🌱 Росток (kr 149)</td><td>15</td><td style="color:var(--gold)">kr 2 235</td><td>13.8%</td><td style="color:var(--green)">↑ +5</td></tr>
+            <tr style="border-top:2px solid var(--border)"><td class="name" style="color:var(--gold)">Итого</td><td style="color:var(--gold)">47</td><td style="color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:18px">kr 16 203</td><td>100%</td><td style="color:var(--green)">↑ +34%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"><span class="notif-icon" id="notif-icon">🌸</span><span id="notif-text"></span></div>
+
+<script>
+// ── DATA ──
+const waitlistData=[
+  {id:1,name:'Erik Larsen',email:'erik@gmail.com',plan:'full',agent:'crypto',status:'new',date:'10 мар'},
+  {id:2,name:'Anna Berg',email:'anna@outlook.com',plan:'garden',agent:'content',status:'new',date:'10 мар'},
+  {id:3,name:'Mikhail K.',email:'misha@pm.me',plan:'full',agent:'auto',status:'new',date:'10 мар'},
+  {id:4,name:'Sofia V.',email:'sofia@icloud.com',plan:'garden',agent:'outreach',status:'pending',date:'09 мар'},
+  {id:5,name:'Lars Hansen',email:'lars@dnb.no',plan:'sprout',agent:'crypto',status:'pending',date:'09 мар'},
+  {id:6,name:'Ingrid O.',email:'ingrid@gmail.com',plan:'garden',agent:'video',status:'active',date:'08 мар'},
+  {id:7,name:'Dmitri P.',email:'dmitri@yandex.ru',plan:'full',agent:'analyst',status:'active',date:'08 мар'},
+  {id:8,name:'Karin N.',email:'karin@hotmail.com',plan:'garden',agent:'content',status:'active',date:'07 мар'},
+  {id:9,name:'Olav S.',email:'olav@telenor.no',plan:'sprout',agent:'auto',status:'pending',date:'07 мар'},
+  {id:10,name:'Maria T.',email:'maria@gmail.com',plan:'garden',agent:'crypto',status:'active',date:'06 мар'},
+  {id:11,name:'Henrik B.',email:'henrik@vg.no',plan:'full',agent:'auto',status:'active',date:'06 мар'},
+  {id:12,name:'Natasha R.',email:'natasha@mail.ru',plan:'garden',agent:'content',status:'new',date:'05 мар'},
+  {id:13,name:'Jonas K.',email:'jonas@finn.no',plan:'sprout',agent:'video',status:'pending',date:'05 мар'},
+  {id:14,name:'Eline H.',email:'eline@gmail.com',plan:'garden',agent:'outreach',status:'active',date:'04 мар'},
+  {id:15,name:'Petter A.',email:'petter@hotmail.no',plan:'full',agent:'crypto',status:'active',date:'04 мар'},
+];
+
+const planLabels={full:'🌺 Полный',garden:'🌿 Сад',sprout:'🌱 Росток'};
+const statusLabels={new:'new',pending:'pending',active:'active'};
+const agentLabels={content:'✍️🌸',crypto:'📊🌻',auto:'⚙️🌿',outreach:'🤝🌺',video:'🎬🌷',analyst:'🧠🔮',all:'🌸 Все'};
+
+// ── PANELS ──
+function showPanel(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={dashboard:'Дашборд <em>/ Overview</em>',waitlist:'Waitlist <em>/ Участники</em>',email:'Рассылка <em>/ Email</em>',messages:'Сообщения <em>/ Chat</em>',blog:'Блог <em>/ Кейсы</em>',roadmap:'Roadmap <em>/ 90 дней</em>',settings:'Настройки <em>/ Settings</em>',agents:'Агенты <em>/ Garden</em>',revenue:'Доход <em>/ Revenue</em>'};
+  document.getElementById('topbar-title').innerHTML=titles[id]||id;
+}
+
+// ── RENDER WAITLIST ──
+function renderWL(data){
+  const tbody=document.getElementById('wl-tbody');
+  tbody.innerHTML='';
+  data.forEach((r,i)=>{
+    const planDot=r.plan==='full'?'dot-full':r.plan==='garden'?'dot-garden':'dot-sprout';
+    tbody.innerHTML+=`<tr>
+      <td style="padding:10px 16px"><input type="checkbox" class="row-check row-cb" data-id="${r.id}" onchange="updateBulk()"></td>
+      <td style="padding:10px 8px;color:var(--dim)">${r.id}</td>
+      <td style="padding:10px 8px"><div class="name">${r.name}</div><div style="font-size:10px;color:var(--dim)">${r.email}</div></td>
+      <td style="padding:10px 8px"><span class="plan-dot ${planDot}"></span>${planLabels[r.plan]}</td>
+      <td style="padding:10px 8px">${agentLabels[r.agent]||r.agent}</td>
+      <td style="padding:10px 8px"><span class="badge badge-${r.status}">${r.status==='new'?'🆕 Новый':r.status==='pending'?'⏳ Ожидает':'✅ Активен'}</span></td>
+      <td style="padding:10px 8px;color:var(--dim)">${r.date}</td>
+      <td style="padding:10px 8px;display:flex;gap:6px">
+        <button class="action-btn" onclick="notify('📧 Написать: ${r.name}')">Письмо</button>
+        <button class="action-btn" onclick="activateUser(${r.id})">✓</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('wl-count-label').textContent=`Показано ${data.length} из ${waitlistData.length}`;
+}
+renderWL(waitlistData);
+
+function filterWL(){
+  const q=document.getElementById('wl-search').value.toLowerCase();
+  const plan=document.getElementById('wl-plan-filter').value;
+  const status=document.getElementById('wl-status-filter').value;
+  const filtered=waitlistData.filter(r=>
+    (!q||(r.name+r.email).toLowerCase().includes(q))&&
+    (!plan||r.plan===plan)&&
+    (!status||r.status===status)
+  );
+  renderWL(filtered);
+}
+
+function toggleAll(cb){document.querySelectorAll('.row-cb').forEach(c=>c.checked=cb.checked);updateBulk();}
+function updateBulk(){
+  const n=document.querySelectorAll('.row-cb:checked').length;
+  document.getElementById('bulk-bar').classList.toggle('show',n>0);
+  document.getElementById('bulk-count').textContent=n+' выбрано';
+}
+function bulkEmail(){notify('📧 Открываю рассылку для выбранных...');showPanel('email',document.querySelector('[onclick*=email]'));}
+function bulkApprove(){notify('✅ Активировано '+document.querySelectorAll('.row-cb:checked').length+' участников');}
+function bulkDelete(){if(confirm('Удалить выбранных участников?'))notify('✕ Удалено');}
+function activateUser(id){const r=waitlistData.find(x=>x.id===id);if(r){r.status='active';renderWL(waitlistData);notify('✅ '+r.name+' активирован');}}
+
+// ── CHARTS ──
+function buildMiniCharts(){
+  const vals=[3,5,4,8,6,9,12,10,11,14,12,16];
+  const max=Math.max(...vals);
+  ['chart-signups','chart-mrr'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.innerHTML=vals.map(v=>`<div class="mc-bar" style="height:${Math.max(4,v/max*100)}%"></div>`).join('');
+  });
+  const revData=[{l:'Окт',v:2100},{l:'Ноя',v:4800},{l:'Дек',v:7200},{l:'Янв',v:9800},{l:'Фев',v:13400},{l:'Мар',v:16203}];
+  const rmax=Math.max(...revData.map(d=>d.v));
+  const rc=document.getElementById('rev-chart');
+  if(rc)rc.innerHTML=revData.map(d=>`<div class="rev-bar-wrap"><div class="rev-val">kr ${(d.v/1000).toFixed(0)}K</div><div class="rev-bar" style="height:${Math.max(4,d.v/rmax*100)}%"></div><div class="rev-label">${d.l}</div></div>`).join('');
+}
+buildMiniCharts();
+
+// ── RECENT SIGNUPS ──
+const recent=waitlistData.slice(0,5);
+const tb=document.getElementById('recent-tbody');
+recent.forEach(r=>{
+  tb.innerHTML+=`<tr>
+    <td class="name">${r.name.split(' ')[0]}</td>
+    <td>${planLabels[r.plan]}</td>
+    <td>${agentLabels[r.agent]}</td>
+    <td style="color:var(--dim)">${r.date}</td>
+  </tr>`;
+});
+
+// ── MESSAGES ──
+const msgs=[
+  {name:'Erik Larsen',avatar:'👤',text:'Привет! Хочу понять какой агент подойдёт для крипто-торговли в Норвегии?',time:'10 мар · 14:32',unread:true},
+  {name:'Sofia V.',avatar:'👤',text:'Есть ли возможность интеграции с Revolut API напрямую?',time:'09 мар · 11:05',unread:true},
+  {name:'Maria T.',avatar:'👤',text:'Когда запустится ИИ-аналитик? Очень жду этого агента!',time:'08 мар · 18:44',unread:true},
+  {name:'Dmitri P.',avatar:'👤',text:'Отличная платформа. Уже использую автоматизатора и Make.com — работает отлично.',time:'07 мар · 09:12',unread:false},
+];
+const ml=document.getElementById('messages-list');
+msgs.forEach(m=>{
+  ml.innerHTML+=`<div class="msg-item">
+    ${m.unread?'<div class="msg-unread"></div>':'<div style="width:6px"></div>'}
+    <div class="msg-avatar">${m.avatar}</div>
+    <div style="flex:1"><div class="msg-name">${m.name}</div><div class="msg-text">${m.text}</div><div class="msg-time">${m.time}</div></div>
+    <button class="action-btn" onclick="notify('💬 Открываю диалог с ${m.name}')">Ответить</button>
+  </div>`;
+});
+
+// ── EMAIL TEMPLATES ──
+const templates={
+  welcome:{subject:'🌸 Добро пожаловать в Blomster Hage, {{name}}!',body:`Привет, {{name}}!
+
+Ты в числе первых участников Blomster Hage — сада ИИ-агентов для автоматизированного заработка в Норвегии.
+
+Ты выбрал: {{plan}} · Агент: {{agent}}
+
+Что дальше:
+→ Запуск запланирован на апрель 2026
+→ Ты получишь 30% скидку на первый месяц
+→ Мы напишем за 7 дней до открытия
+
+С уважением,
+Blomster Hage 🌸`},
+  launch:{subject:'🚀 Blomster Hage открывается! Твоё место готово',body:`{{name}}, момент настал!
+
+Blomster Hage официально открывается.
+Твой тариф {{plan}} и агент {{agent}} ждут тебя.
+
+→ Активируй со скидкой 30%: blomsterhage.no/start
+
+Предложение действует 48 часов.
+
+Blomster Hage 🌸`},
+  discount:{subject:'💎 Только для тебя: скидка 30% на {{plan}}',body:`{{name}}, ты зарезервировал место одним из первых.
+
+Твоя скидка: 30% на первый месяц {{plan}}
+Экономия: {{savings}} kr
+
+Активируй до конца недели.
+
+→ blomsterhage.no/early-access
+
+Blomster Hage 🌸`},
+  case:{subject:'📊 Новый кейс: Крипто-агент заработал kr 4 820 за месяц',body:`{{name}}, только что вышел новый кейс в блоге.
+
+Как агент Helianthus 📊🌻 нашёл арбитраж между Binance и Revolut:
+→ 23 алерта за месяц
+→ 14 исполненных сделок  
+→ kr 4 820 чистой прибыли
+
+Читать: blomsterhage.no/blog/crypto-arbitrage
+
+Blomster Hage 🌸`},
+  followup:{subject:'🌿 Ты ещё с нами, {{name}}?',body:`{{name}},
+
+Неделю назад ты записался в waitlist Blomster Hage.
+
+Если есть вопросы — просто ответь на это письмо.
+Если передумал — ничего страшного, просто дай знать.
+
+Мы здесь если нужны 🌸
+
+Blomster Hage`}
+};
+function loadTemplate(key){
+  const t=templates[key];
+  document.getElementById('email-subject').value=t.subject;
+  document.getElementById('email-body').value=t.body;
+  notify('📋 Шаблон загружен');
+}
+function previewEmail(){
+  const subj=document.getElementById('email-subject').value||'(без темы)';
+  const body=document.getElementById('email-body').value||'(пусто)';
+  const preview=document.getElementById('email-preview');
+  preview.innerHTML=`<strong>${subj}</strong><hr style="border-color:var(--border);margin:10px 0">${body.replace(/\n/g,'<br>').replace(/{{name}}/g,'<span style="color:var(--gold)">Erik</span>').replace(/{{plan}}/g,'<span style="color:var(--gold)">🌿 Сад</span>').replace(/{{agent}}/g,'<span style="color:var(--gold)">📊🌻</span>').replace(/→/g,'<span style="color:var(--gold)">→</span>')}`;
+  document.getElementById('email-preview-card').style.display='block';
+}
+function sendEmail(){
+  const subj=document.getElementById('email-subject').value;
+  if(!subj){notify('⚠️ Введи тему письма');return;}
+  const segs=document.querySelectorAll('.seg-tag.active').length;
+  notify(`📧 Письмо отправлено ${segs>0?'выбранным сегментам':'всем участникам'}!`);
+}
+
+// ── EXPORT ──
+function exportCSV(){
+  const rows=[['ID','Имя','Email','Тариф','Агент','Статус','Дата'],...waitlistData.map(r=>[r.id,r.name,r.email,r.plan,r.agent,r.status,r.date])];
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='blomster-hage-waitlist.csv';a.click();
+  notify('↓ CSV скачан — '+waitlistData.length+' участников');
+}
+
+// ── NOTIFY ──
+let notifTimer;
+function notify(msg){
+  clearTimeout(notifTimer);
+  const n=document.getElementById('notif');
+  document.getElementById('notif-text').textContent=msg;
+  n.classList.add('show');
+  notifTimer=setTimeout(()=>n.classList.remove('show'),3200);
+}
+
+// Auto-notify on load
+setTimeout(()=>notify('🌸 Добро пожаловать в Admin · Blomster Hage'),600);
+</script>
+</body>
+</html>

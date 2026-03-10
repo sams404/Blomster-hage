@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blomster Hage · Блог — Кейсы ИИ-агентов</title>
+<meta name="description" content="Реальные кейсы как ИИ-агенты зарабатывают в Норвегии. Крипто, автоматизация, контент, фриланс.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+:root{
+  --bg:#080808;--s1:#0f0f0f;--s2:#141414;--s3:#191919;
+  --border:rgba(255,255,255,0.055);
+  --text:#e6e2d8;--muted:rgba(230,226,216,0.38);--dim:rgba(230,226,216,0.16);
+  --gold:#c9a96e;--gold-glow:rgba(201,169,110,0.08);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:13px;line-height:1.6;overflow-x:hidden;cursor:none;}
+#cur{position:fixed;width:5px;height:5px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);}
+#cur-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(201,169,110,0.22);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .35s cubic-bezier(.25,.46,.45,.94);}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:20px 52px;border-bottom:1px solid var(--border);background:rgba(8,8,8,0.92);backdrop-filter:blur(24px);}
+.logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;letter-spacing:.06em;text-decoration:none;color:var(--text);cursor:none;}
+.logo em{color:var(--gold);font-style:italic;}
+.nav-right{display:flex;align-items:center;gap:28px;}
+.nav-link{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .2s;cursor:none;}
+.nav-link:hover,.nav-link.active{color:var(--text);}
+.nav-link.active{color:var(--gold);}
+.nav-cta{background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;padding:8px 20px;cursor:none;transition:all .25s;text-decoration:none;}
+.nav-cta:hover{background:var(--gold);color:var(--bg);}
+
+/* BLOG HERO */
+.blog-hero{padding:140px 52px 80px;position:relative;z-index:2;max-width:1400px;margin:0 auto;}
+.blog-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:20px;opacity:0;animation:fadeUp .7s .1s forwards;}
+.blog-title{font-family:'Cormorant Garamond',serif;font-size:clamp(40px,6vw,80px);font-weight:300;line-height:1.0;margin-bottom:20px;opacity:0;animation:fadeUp .8s .2s forwards;}
+.blog-title em{font-style:italic;color:var(--gold);}
+.blog-sub{font-size:12px;color:var(--muted);max-width:560px;line-height:1.8;opacity:0;animation:fadeUp .7s .35s forwards;}
+
+/* FILTER TAGS */
+.filter-bar{padding:0 52px 48px;position:relative;z-index:2;max-width:1400px;margin:0 auto;opacity:0;animation:fadeUp .7s .45s forwards;}
+.filter-tags{display:flex;gap:8px;flex-wrap:wrap;}
+.ftag{background:none;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;padding:7px 16px;cursor:none;transition:all .2s;text-transform:uppercase;}
+.ftag.active,.ftag:hover{border-color:var(--gold);color:var(--gold);}
+.ftag.active{background:var(--gold-glow);}
+
+/* FEATURED POST */
+.featured-wrap{padding:0 52px 4px;position:relative;z-index:2;max-width:1400px;margin:0 auto;}
+.featured-post{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--s1);border:1px solid var(--border);margin-bottom:2px;transition:border-color .3s;cursor:none;}
+.featured-post:hover{border-color:rgba(255,255,255,.1);}
+.featured-visual{background:var(--s2);padding:52px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-height:400px;position:relative;overflow:hidden;}
+.featured-bg-emoji{position:absolute;font-size:160px;opacity:.06;right:-20px;bottom:-20px;line-height:1;pointer-events:none;}
+.featured-tag{font-size:9px;letter-spacing:.22em;text-transform:uppercase;padding:5px 12px;border:1px solid;margin-bottom:24px;}
+.featured-big-num{font-family:'Cormorant Garamond',serif;font-size:80px;color:var(--gold);font-weight:300;line-height:1;margin-bottom:8px;}
+.featured-big-label{font-size:11px;color:var(--muted);letter-spacing:.1em;}
+.featured-body{padding:48px 52px;display:flex;flex-direction:column;justify-content:center;}
+.featured-label{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;}
+.featured-post-title{font-family:'Cormorant Garamond',serif;font-size:clamp(26px,3vw,40px);font-weight:300;line-height:1.15;margin-bottom:20px;}
+.featured-excerpt{font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:32px;}
+.featured-meta{display:flex;align-items:center;gap:20px;font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:28px;}
+.featured-meta span{display:flex;align-items:center;gap:6px;}
+.read-btn{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);text-decoration:none;cursor:none;transition:gap .2s;}
+.read-btn:hover{gap:14px;}
+
+/* POSTS GRID */
+.posts-wrap{padding:2px 52px 96px;position:relative;z-index:2;max-width:1400px;margin:0 auto;}
+.posts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;}
+.post-card{background:var(--s1);border:1px solid var(--border);padding:36px 32px;position:relative;overflow:hidden;transition:all .35s cubic-bezier(.25,.46,.45,.94);cursor:none;display:flex;flex-direction:column;}
+.post-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -20%,var(--pc,rgba(201,169,110,.08)) 0%,transparent 60%);opacity:0;transition:opacity .4s;}
+.post-card:hover{border-color:rgba(255,255,255,.1);transform:translateY(-2px);box-shadow:0 16px 32px rgba(0,0,0,.4);}
+.post-card:hover::before{opacity:1;}
+.post-emoji{font-size:32px;margin-bottom:16px;display:block;}
+.post-tag{font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:4px 10px;border:1px solid;margin-bottom:16px;display:inline-block;}
+.post-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;line-height:1.2;margin-bottom:12px;}
+.post-excerpt{font-size:11px;color:var(--muted);line-height:1.75;margin-bottom:20px;flex:1;}
+.post-meta{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--dim);letter-spacing:.08em;padding-top:16px;border-top:1px solid var(--border);}
+.post-result{font-size:10px;color:var(--gold);letter-spacing:.1em;font-weight:400;}
+
+/* ARTICLE VIEW */
+.article-view{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;overflow-y:auto;}
+.article-view.open{display:block;}
+.article-inner{max-width:720px;margin:0 auto;padding:120px 52px 80px;}
+.article-back{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:none;display:flex;align-items:center;gap:8px;margin-bottom:52px;transition:color .2s;}
+.article-back:hover{color:var(--gold);}
+.article-tag{font-size:9px;letter-spacing:.24em;text-transform:uppercase;padding:5px 14px;border:1px solid;margin-bottom:20px;display:inline-block;}
+.article-title{font-family:'Cormorant Garamond',serif;font-size:clamp(32px,5vw,60px);font-weight:300;line-height:1.05;margin-bottom:20px;}
+.article-meta-row{display:flex;align-items:center;gap:24px;font-size:10px;color:var(--dim);letter-spacing:.1em;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:48px;}
+.article-result-badge{background:rgba(126,184,126,.08);border:1px solid rgba(126,184,126,.2);color:#7eb87e;font-size:10px;letter-spacing:.14em;padding:5px 14px;text-transform:uppercase;}
+.article-body h2{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;margin:40px 0 16px;}
+.article-body h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:300;color:var(--gold);margin:28px 0 12px;}
+.article-body p{font-size:13px;color:var(--muted);line-height:1.85;margin-bottom:18px;}
+.article-body strong{color:var(--text);font-weight:400;}
+.article-highlight{background:var(--s1);border-left:2px solid var(--gold);padding:20px 24px;margin:28px 0;font-size:13px;color:var(--text);line-height:1.7;}
+.article-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:32px 0;}
+.astat{background:var(--s1);border:1px solid var(--border);padding:20px;text-align:center;}
+.astat-num{font-family:'Cormorant Garamond',serif;font-size:32px;color:var(--gold);font-weight:300;}
+.astat-label{font-size:10px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
+.article-steps{list-style:none;margin:24px 0;}
+.article-steps li{padding:14px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;gap:14px;align-items:flex-start;line-height:1.65;}
+.article-steps li:last-child{border:none;}
+.step-marker{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold);flex-shrink:0;line-height:1;margin-top:2px;}
+.article-cta{background:var(--s1);border:1px solid var(--border);padding:36px;text-align:center;margin-top:52px;}
+.article-cta h3{font-family:'Cormorant Garamond',serif;font-size:26px;margin-bottom:12px;}
+.article-cta p{font-size:12px;color:var(--muted);margin-bottom:24px;}
+.article-cta-btn{background:var(--gold);color:var(--bg);border:none;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.14em;padding:14px 36px;cursor:none;transition:all .25s;text-transform:uppercase;}
+.article-cta-btn:hover{background:#d4b87e;}
+
+/* NEWSLETTER BAR */
+.newsletter{padding:72px 52px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--s1);position:relative;z-index:2;}
+.newsletter-inner{max-width:640px;margin:0 auto;text-align:center;}
+.newsletter h2{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;margin-bottom:12px;}
+.newsletter p{font-size:12px;color:var(--muted);margin-bottom:28px;line-height:1.75;}
+.nl-form{display:flex;gap:0;max-width:420px;margin:0 auto 12px;}
+.nl-input{flex:1;background:var(--s2);border:1px solid var(--border);border-right:none;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:13px 18px;outline:none;transition:border-color .2s;cursor:none;}
+.nl-input:focus{border-color:var(--gold);}
+.nl-btn{background:var(--gold);color:var(--bg);border:1px solid var(--gold);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.12em;padding:13px 24px;cursor:none;transition:all .25s;white-space:nowrap;text-transform:uppercase;}
+.nl-btn:hover{background:#d4b87e;}
+.nl-note{font-size:10px;color:var(--dim);letter-spacing:.08em;}
+
+/* FOOTER */
+footer{padding:40px 52px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;}
+.footer-logo em{color:var(--gold);font-style:italic;}
+.footer-copy{font-size:11px;color:var(--dim);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:960px){
+  nav{padding:18px 24px;}
+  .blog-hero,.filter-bar,.featured-wrap,.posts-wrap,.newsletter{padding-left:24px;padding-right:24px;}
+  .featured-post{grid-template-columns:1fr;}
+  .featured-visual{min-height:220px;}
+  .posts-grid{grid-template-columns:1fr 1fr;}
+  footer{flex-direction:column;gap:12px;text-align:center;padding:32px 24px;}
+  .article-inner{padding:90px 24px 60px;}
+  .article-stats{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:580px){
+  .posts-grid{grid-template-columns:1fr;}
+  .nl-form{flex-direction:column;}
+  .nl-input{border-right:1px solid var(--border);border-bottom:none;}
+  .blog-title{font-size:38px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<nav>
+  <a class="logo" href="#">Blomster <em>Hage</em></a>
+  <div class="nav-right">
+    <a href="#" class="nav-link">← Сад</a>
+    <a href="#" class="nav-link active">Блог</a>
+    <a href="#newsletter" class="nav-link">Рассылка</a>
+    <a href="#newsletter" class="nav-cta">🌸 Вступить</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="blog-hero">
+  <p class="blog-eyebrow">📖 Кейсы · Стратегии · Автоматизация</p>
+  <h1 class="blog-title">Сад работает.<br><em>Ты наблюдаешь.</em></h1>
+  <p class="blog-sub">Реальные кейсы как ИИ-агенты Blomster Hage зарабатывают в Норвегии — без твоего участия. Крипто, контент, фриланс, автоматизация.</p>
+</div>
+
+<!-- FILTERS -->
+<div class="filter-bar">
+  <div class="filter-tags">
+    <button class="ftag active" onclick="filterPosts('all')">🌿 Все</button>
+    <button class="ftag" onclick="filterPosts('crypto')">📊 Крипто</button>
+    <button class="ftag" onclick="filterPosts('content')">✍️ Контент</button>
+    <button class="ftag" onclick="filterPosts('automation')">⚙️ Автоматизация</button>
+    <button class="ftag" onclick="filterPosts('freelance')">🤝 Фриланс</button>
+    <button class="ftag" onclick="filterPosts('video')">🎬 Видео</button>
+    <button class="ftag" onclick="filterPosts('norway')">🇳🇴 Норвегия</button>
+  </div>
+</div>
+
+<!-- FEATURED -->
+<div class="featured-wrap">
+  <div class="featured-post" onclick="openArticle('crypto-arbitrage')">
+    <div class="featured-visual">
+      <div class="featured-bg-emoji">📊</div>
+      <span class="featured-tag s-active" style="color:#7eb87e;border-color:rgba(126,184,126,.3)">📊 Крипто · Кейс #001</span>
+      <div class="featured-big-num">+kr 4 820</div>
+      <div class="featured-big-label">заработано за 30 дней · без участия</div>
+    </div>
+    <div class="featured-body">
+      <div class="featured-label">🌟 Главный кейс месяца</div>
+      <h2 class="featured-post-title">Как Крипто-агент 🌻 нашёл арбитраж между Binance и Revolut и заработал kr 4 820 за месяц</h2>
+      <p class="featured-excerpt">Агент мониторил расхождения цен BTC/NOK между тремя биржами 24/7. Алерты приходили в Telegram. Я просто нажимал кнопку. Полный разбор стратегии, цифры и Make.com сценарий внутри.</p>
+      <div class="featured-meta">
+        <span>🗓 Март 2026</span>
+        <span>⏱ 8 мин чтения</span>
+        <span>👁 1 240 просмотров</span>
+      </div>
+      <a class="read-btn">Читать кейс →</a>
+    </div>
+  </div>
+</div>
+
+<!-- POSTS GRID -->
+<div class="posts-wrap">
+  <div class="posts-grid" id="posts-grid">
+
+    <div class="post-card" data-cat="automation norway" style="--pc:rgba(147,200,180,.1)" onclick="openArticle('forex-newsletter')">
+      <span class="post-emoji">⚙️📬</span>
+      <span class="post-tag" style="color:#b8a97e;border-color:rgba(184,169,126,.25)">⚙️ Автоматизация</span>
+      <h3 class="post-title">NOK Forex Newsletter: kr 2 100/мес на автопилоте через Make.com + Stripe</h3>
+      <p class="post-excerpt">Как я настроил автоматическую рассылку курсов NOK за 4 часа. Make.com сценарий, Stripe подписки, первые 14 платящих подписчиков.</p>
+      <div class="post-meta">
+        <span>🗓 Фев 2026 · 6 мин</span>
+        <span class="post-result">+kr 2 100/мес</span>
+      </div>
+    </div>
+
+    <div class="post-card" data-cat="content freelance" style="--pc:rgba(255,182,193,.1)" onclick="openArticle('content-autopilot')">
+      <span class="post-emoji">✍️🚀</span>
+      <span class="post-tag" style="color:rgba(255,182,193,.8);border-color:rgba(255,182,193,.2)">✍️ Контент</span>
+      <h3 class="post-title">Контент-агент написал 47 постов за неделю. Результат: +320 подписчиков и 3 клиента</h3>
+      <p class="post-excerpt">Полная автоматизация LinkedIn и Telegram. Агент изучил мой стиль за 2 дня и начал публиковать самостоятельно. Разбор воронки и цифры.</p>
+      <div class="post-meta">
+        <span>🗓 Фев 2026 · 5 мин</span>
+        <span class="post-result">+3 клиента</span>
+      </div>
+    </div>
+
+    <div class="post-card" data-cat="freelance norway" style="--pc:rgba(255,140,100,.1)" onclick="openArticle('upwork-automation')">
+      <span class="post-emoji">🤝💼</span>
+      <span class="post-tag" style="color:rgba(255,140,100,.8);border-color:rgba(255,140,100,.2)">🤝 Фриланс</span>
+      <h3 class="post-title">Аутрич-агент нашёл 5 клиентов на Upwork за 2 недели. Я не написал ни одного письма сам</h3>
+      <p class="post-excerpt">Агент анализировал новые проекты каждые 30 минут, писал персональные питчи и отправлял follow-up. Результат — kr 8 500 за первый месяц.</p>
+      <div class="post-meta">
+        <span>🗓 Янв 2026 · 7 мин</span>
+        <span class="post-result">kr 8 500</span>
+      </div>
+    </div>
+
+    <div class="post-card" data-cat="video content" style="--pc:rgba(180,130,255,.1)" onclick="openArticle('shorts-strategy')">
+      <span class="post-emoji">🎬📱</span>
+      <span class="post-tag" style="color:rgba(180,130,255,.8);border-color:rgba(180,130,255,.2)">🎬 Видео</span>
+      <h3 class="post-title">Из одного подкаста — 28 YouTube Shorts. Видео-агент собрал 12 000 просмотров за 3 недели</h3>
+      <p class="post-excerpt">Агент нарезал 45-минутный подкаст на 28 Shorts с субтитрами на RU/NO/EN. Авто-публикация по расписанию. Разбор алгоритма и лучших хайлайтов.</p>
+      <div class="post-meta">
+        <span>🗓 Янв 2026 · 4 мин</span>
+        <span class="post-result">12 000 просм.</span>
+      </div>
+    </div>
+
+    <div class="post-card" data-cat="norway automation" style="--pc:rgba(100,180,255,.1)" onclick="openArticle('norway-tax')">
+      <span class="post-emoji">🇳🇴🧾</span>
+      <span class="post-tag" style="color:rgba(100,180,255,.8);border-color:rgba(100,180,255,.2)">🇳🇴 Норвегия</span>
+      <h3 class="post-title">Aksjesparekonto + ИИ-агент: как я оптимизирую налоги на крипто в Норвегии автоматически</h3>
+      <p class="post-excerpt">Агент рассчитывает P&L с учётом норвежского налогового кодекса и готовит отчёт для Skatteetaten. Экономия kr 3 200 в год на налоговом консультанте.</p>
+      <div class="post-meta">
+        <span>🗓 Янв 2026 · 9 мин</span>
+        <span class="post-result">-kr 3 200 налогов</span>
+      </div>
+    </div>
+
+    <div class="post-card" data-cat="crypto automation" style="--pc:rgba(255,215,100,.1)" onclick="openArticle('make-crypto')">
+      <span class="post-emoji">💹⚡</span>
+      <span class="post-tag" style="color:rgba(255,215,100,.8);border-color:rgba(255,215,100,.2)">📊 Крипто</span>
+      <h3 class="post-title">Make.com сценарий: алерты арбитража Binance→Bybit→Revolut в Telegram за 0 кода</h3>
+      <p class="post-excerpt">Полный разбор 6-шагового сценария. Скачай готовый шаблон, настрой за 20 минут и получай алерты когда разница цен превышает 0.5%.</p>
+      <div class="post-meta">
+        <span>🗓 Дек 2025 · 10 мин</span>
+        <span class="post-result">Шаблон внутри</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NEWSLETTER -->
+<section class="newsletter" id="newsletter">
+  <div class="newsletter-inner">
+    <div style="font-size:36px;margin-bottom:16px">🌸</div>
+    <h2>Кейсы каждую неделю.<br>Прямо в inbox.</h2>
+    <p>Реальные цифры. Рабочие сценарии Make.com. Стратегии заработка в Норвегии — без воды.</p>
+    <div class="nl-form">
+      <input class="nl-input" id="nl-email" type="email" placeholder="your@email.com">
+      <button class="nl-btn" onclick="subscribeNL()">Подписаться</button>
+    </div>
+    <p class="nl-note" id="nl-msg">Без спама · Отписка в 1 клик · Ранние участники получают kr 150 скидку</p>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Blomster <em>Hage</em></div>
+  <p class="footer-copy">© 2026 · Блог · Норвегия 🇳🇴</p>
+</footer>
+
+<!-- ARTICLE VIEW -->
+<div class="article-view" id="article-view">
+  <div class="article-inner" id="article-inner"></div>
+</div>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';ring.style.left=e.clientX+'px';ring.style.top=e.clientY+'px';});
+document.querySelectorAll('a,button,.post-card,.featured-post').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='44px';ring.style.height='44px';ring.style.borderColor='rgba(201,169,110,0.5)';});
+  el.addEventListener('mouseleave',()=>{ring.style.width='30px';ring.style.height='30px';ring.style.borderColor='rgba(201,169,110,0.22)';});
+});
+
+// FILTER
+function filterPosts(cat){
+  document.querySelectorAll('.ftag').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.post-card').forEach(c=>{
+    const cats=c.getAttribute('data-cat')||'';
+    c.style.display=(cat==='all'||cats.includes(cat))?'flex':'none';
+  });
+}
+
+// ARTICLES
+const articles={
+  'crypto-arbitrage':{
+    tag:'📊 Крипто · Кейс #001',tagColor:'color:#7eb87e;border-color:rgba(126,184,126,.3)',
+    title:'Как Крипто-агент 🌻 нашёл арбитраж между Binance и Revolut и заработал kr 4 820 за месяц',
+    meta:['🗓 Март 2026','⏱ 8 мин чтения','👁 1 240 просм.'],result:'+ kr 4 820 / месяц',
+    body:`
+<h2>Предыстория</h2>
+<p>Я давно знал что арбитраж между биржами существует — но всегда думал что нужно сидеть и смотреть на экран. Агент <strong>Helianthus (📊🌻)</strong> изменил это полностью.</p>
+<div class="article-highlight">Агент работал 24/7. Я получал алерты в Telegram. Средняя разница цен BTC/NOK между Binance и Revolut составляла 0.8–1.4%. При сделках на kr 50 000 это kr 400–700 за операцию.</div>
+<h2>Как это работает</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div>Агент каждые 30 секунд сравнивает цены BTC/NOK на Binance, Bybit и Revolut через их API</div></li>
+  <li><span class="step-marker">02</span><div>При расхождении > 0.5% — моментальный алерт в Telegram с точными ценами и расчётом прибыли</div></li>
+  <li><span class="step-marker">03</span><div>Я смотрю на алерт, оцениваю за 10 секунд, нажимаю кнопку или игнорирую</div></li>
+  <li><span class="step-marker">04</span><div>Агент рассчитывает P&L с учётом комиссий и норвежского налога. Отчёт готов автоматически</div></li>
+</ul>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">23</div><div class="astat-label">Алертов за месяц</div></div>
+  <div class="astat"><div class="astat-num">14</div><div class="astat-label">Исполненных сделок</div></div>
+  <div class="astat"><div class="astat-num">kr 344</div><div class="astat-label">Средняя прибыль/сделка</div></div>
+</div>
+<h2>Технический стек</h2>
+<p>Всё работает через <strong>Make.com</strong> — 6 шагов: Binance API → Bybit API → Revolut API → Сравнение цен → Расчёт прибыли с комиссиями → Telegram алерт. Никакого кода, только модули.</p>
+<h3>Почему NOK важен</h3>
+<p>Большинство арбитражников работают с USDT. Но разрыв цен BTC/NOK между местными (Revolut Norway) и глобальными (Binance) биржами часто <strong>в 2-3 раза больше</strong> чем в паре BTC/USDT. Это норвежское преимущество.</p>
+<h2>Риски и ограничения</h2>
+<p>Арбитраж не гарантирован. Разница может исчезнуть за секунды. Лимиты Revolut на вывод. Налоговые обязательства в Норвегии. Агент помогает найти возможности — решение всегда за тобой.</p>
+<div class="article-highlight">Главный инсайт: не нужно смотреть на графики. Агент — твои глаза. Ты — решение.</div>
+    `
+  },
+  'forex-newsletter':{
+    tag:'⚙️ Автоматизация · Кейс #002',tagColor:'color:#b8a97e;border-color:rgba(184,169,126,.3)',
+    title:'NOK Forex Newsletter: kr 2 100/мес на автопилоте через Make.com + Stripe',
+    meta:['🗓 Февраль 2026','⏱ 6 мин чтения','👁 876 просм.'],result:'+ kr 2 100 / месяц',
+    body:`
+<h2>Идея за 5 минут</h2>
+<p>Каждое утро сотни людей в Норвегии хотят знать курс NOK к USD, EUR и GBP. Я просто автоматизировал доставку этой информации — и поставил Stripe между мной и читателями.</p>
+<div class="article-highlight">14 подписчиков × kr 149/мес = kr 2 086. Настройка заняла 4 часа. Поддержка — 0 минут в день.</div>
+<h2>Стек</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div><strong>Make.com</strong> — триггер каждый день в 7:30 по Oslo времени</div></li>
+  <li><span class="step-marker">02</span><div><strong>ExchangeRate API</strong> — получаем актуальные курсы NOK/USD, EUR, GBP, CHF</div></li>
+  <li><span class="step-marker">03</span><div><strong>Claude API</strong> — форматирует письмо с аналитикой и прогнозом тренда</div></li>
+  <li><span class="step-marker">04</span><div><strong>Mailchimp/Brevo</strong> — отправка только платным подписчикам</div></li>
+  <li><span class="step-marker">05</span><div><strong>Stripe</strong> — kr 149/мес, автопродление, отмена в 1 клик</div></li>
+</ul>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">14</div><div class="astat-label">Подписчиков</div></div>
+  <div class="astat"><div class="astat-num">kr 149</div><div class="astat-label">Цена/месяц</div></div>
+  <div class="astat"><div class="astat-num">0 мин</div><div class="astat-label">Моё участие/день</div></div>
+</div>
+<h3>Следующие шаги</h3>
+<p>Цель — 100 подписчиков = kr 14 900/мес. Для этого нужен органический трафик через блог и YouTube Shorts. Агент <strong>Контент-мастер</strong> уже пишет SEO-статьи про NOK форекс.</p>
+    `
+  },
+  'content-autopilot':{
+    tag:'✍️ Контент · Кейс #003',tagColor:'color:rgba(255,182,193,.8);border-color:rgba(255,182,193,.25)',
+    title:'Контент-агент написал 47 постов за неделю. Результат: +320 подписчиков и 3 клиента',
+    meta:['🗓 Февраль 2026','⏱ 5 мин чтения','👁 1 050 просм.'],result:'+3 клиента · +320 подп.',
+    body:`
+<h2>Проблема</h2>
+<p>Я знал что контент важен. Но писать каждый день — невозможно когда занимаешься другими проектами. Решение: отдать это агенту полностью.</p>
+<div class="article-highlight">Агент Rosa Damascena изучил 30 моих старых постов за 2 часа. После этого он пишет в моём стиле лучше чем я в уставший вечер.</div>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">47</div><div class="astat-label">Постов за неделю</div></div>
+  <div class="astat"><div class="astat-num">+320</div><div class="astat-label">Новых подписчиков</div></div>
+  <div class="astat"><div class="astat-num">3</div><div class="astat-label">Новых клиента</div></div>
+</div>
+<h2>Как настроен агент</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div>Загружаю тему или ключевое слово раз в неделю (5 минут)</div></li>
+  <li><span class="step-marker">02</span><div>Агент генерирует контент-план на 7 дней: LinkedIn, Telegram, Instagram</div></li>
+  <li><span class="step-marker">03</span><div>Make.com публикует по расписанию в лучшее время для каждой платформы</div></li>
+  <li><span class="step-marker">04</span><div>Агент мониторит реакции и корректирует следующие посты под аудиторию</div></li>
+</ul>
+<h3>ROI</h3>
+<p>3 клиента по средней ставке kr 8 000/проект = <strong>kr 24 000</strong>. Стоимость агента за месяц = kr 349. ROI = 6 779%.</p>
+    `
+  },
+  'upwork-automation':{
+    tag:'🤝 Фриланс · Кейс #004',tagColor:'color:rgba(255,140,100,.8);border-color:rgba(255,140,100,.25)',
+    title:'Аутрич-агент нашёл 5 клиентов на Upwork за 2 недели. Я не написал ни одного письма сам',
+    meta:['🗓 Январь 2026','⏱ 7 мин чтения','👁 2 100 просм.'],result:'kr 8 500 за первый месяц',
+    body:`
+<h2>Честно: я ненавижу холодные письма</h2>
+<p>Писать питчи на Upwork — это монотонно, стрессово и занимает часы. Агент <strong>Poppy Sales (🤝🌺)</strong> взял это на себя полностью.</p>
+<div class="article-highlight">Агент сканировал новые проекты каждые 30 минут, анализировал требования и писал персональный питч. Я только одобрял или отклонял за 10 секунд.</div>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">5</div><div class="astat-label">Закрытых клиентов</div></div>
+  <div class="astat"><div class="astat-num">147</div><div class="astat-label">Отправленных питчей</div></div>
+  <div class="astat"><div class="astat-num">3.4%</div><div class="astat-label">Конверсия</div></div>
+</div>
+<h2>Что делал агент</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div>Фильтрация проектов по бюджету (>kr 3 000), рейтингу клиента (>4.5) и ключевым словам</div></li>
+  <li><span class="step-marker">02</span><div>Анализ профиля клиента и его предыдущих проектов для персонализации</div></li>
+  <li><span class="step-marker">03</span><div>Написание питча в моём стиле с конкретным решением под задачу клиента</div></li>
+  <li><span class="step-marker">04</span><div>Автоматический follow-up через 3 дня если нет ответа</div></li>
+</ul>
+<h3>Ключевой инсайт</h3>
+<p>Большинство фрилансеров пишут одинаковые шаблонные питчи. Агент делает каждый питч уникальным — ссылается на конкретный проект клиента, его боль, и предлагает точное решение. Это и есть 3.4% против среднего 1.1%.</p>
+    `
+  },
+  'shorts-strategy':{
+    tag:'🎬 Видео · Кейс #005',tagColor:'color:rgba(180,130,255,.8);border-color:rgba(180,130,255,.25)',
+    title:'Из одного подкаста — 28 YouTube Shorts. Видео-агент собрал 12 000 просмотров за 3 недели',
+    meta:['🗓 Январь 2026','⏱ 4 мин чтения','👁 3 400 просм.'],result:'12 000 просмотров',
+    body:`
+<h2>Один файл — 28 видео</h2>
+<p>Я записал подкаст на 45 минут. Загрузил в агента <strong>Tulipa Reels (🎬🌷)</strong>. Через 2 часа получил 28 готовых Shorts с субтитрами на трёх языках.</p>
+<div class="article-highlight">Агент определяет хайлайты по пикам энергии голоса, смысловой завершённости и вовлечённости. Лучшие моменты — автоматически.</div>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">28</div><div class="astat-label">Shorts из 1 видео</div></div>
+  <div class="astat"><div class="astat-num">12K</div><div class="astat-label">Просмотров</div></div>
+  <div class="astat"><div class="astat-num">3</div><div class="astat-label">Языка субтитров</div></div>
+</div>
+<h2>Процесс</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div>Загружаю видео или даю ссылку на YouTube</div></li>
+  <li><span class="step-marker">02</span><div>Агент анализирует аудио и находит 15-60 секундные сегменты с высокой ценностью</div></li>
+  <li><span class="step-marker">03</span><div>Субтитры RU/NO/EN генерируются автоматически с цветовым выделением ключевых слов</div></li>
+  <li><span class="step-marker">04</span><div>Make.com публикует по расписанию: 2 Shorts в день, лучшее время для каждой платформы</div></li>
+</ul>
+    `
+  },
+  'norway-tax':{
+    tag:'🇳🇴 Норвегия · Кейс #006',tagColor:'color:rgba(100,180,255,.8);border-color:rgba(100,180,255,.25)',
+    title:'Aksjesparekonto + ИИ-агент: как я оптимизирую налоги на крипто в Норвегии автоматически',
+    meta:['🗓 Январь 2026','⏱ 9 мин чтения','👁 980 просм.'],result:'Экономия kr 3 200/год',
+    body:`
+<h2>Норвежские налоги на крипто — сложно</h2>
+<p>В Норвегии каждая крипто-сделка — налогооблагаемое событие. Отслеживать это вручную при активном трейдинге невозможно. Агент делает это в реальном времени.</p>
+<div class="article-highlight">Агент знает норвежский налоговый кодекс. Он рассчитывает каждую сделку с учётом FIFO, 22% налога на прибыль и готовит отчёт в формате Skatteetaten.</div>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">22%</div><div class="astat-label">Налог на прибыль NO</div></div>
+  <div class="astat"><div class="astat-num">kr 3 200</div><div class="astat-label">Экономия на консультанте</div></div>
+  <div class="astat"><div class="astat-num">0</div><div class="astat-label">Ошибок в отчёте</div></div>
+</div>
+<h3>Aksjesparekonto и крипто</h3>
+<p>ASK (aksjesparekonto) не применяется к крипто напрямую — но агент помогает оптимизировать структуру активов чтобы минимизировать налоговую нагрузку легально.</p>
+<h2>Важный дисклеймер</h2>
+<p>Агент — инструмент автоматизации, не налоговый консультант. Финальный отчёт рекомендуется проверить с бухгалтером. Но базовую работу агент делает точно.</p>
+    `
+  },
+  'make-crypto':{
+    tag:'📊 Крипто · Гайд #001',tagColor:'color:rgba(255,215,100,.8);border-color:rgba(255,215,100,.25)',
+    title:'Make.com сценарий: алерты арбитража Binance→Bybit→Revolut в Telegram за 0 кода',
+    meta:['🗓 Декабрь 2025','⏱ 10 мин чтения','👁 4 200 просм.'],result:'Скачай шаблон бесплатно',
+    body:`
+<h2>Что ты получишь</h2>
+<p>Готовый Make.com сценарий который каждые 30 секунд сравнивает цены BTC/NOK на трёх биржах и присылает Telegram-алерт если разница превышает порог.</p>
+<div class="article-highlight">Время настройки: 20 минут. Код: 0 строк. Результат: автоматические алерты с точными ценами и расчётом прибыли после комиссий.</div>
+<h2>Шаги настройки</h2>
+<ul class="article-steps">
+  <li><span class="step-marker">01</span><div><strong>Создай аккаунт Make.com</strong> (бесплатный план работает). Импортируй шаблон по ссылке ниже.</div></li>
+  <li><span class="step-marker">02</span><div><strong>API ключи</strong>: Binance Read-Only API, Bybit Read-Only API (только просмотр цен — безопасно)</div></li>
+  <li><span class="step-marker">03</span><div><strong>Revolut</strong>: используем публичный endpoint без ключей для курса NOK</div></li>
+  <li><span class="step-marker">04</span><div><strong>Telegram Bot</strong>: создай через @BotFather за 2 минуты, добавь токен в сценарий</div></li>
+  <li><span class="step-marker">05</span><div><strong>Порог срабатывания</strong>: рекомендую 0.5% после комиссий. Настраивается в одном поле.</div></li>
+  <li><span class="step-marker">06</span><div><strong>Запусти</strong> — первый алерт придёт в течение часа если рынок активен</div></li>
+</ul>
+<div class="article-stats">
+  <div class="astat"><div class="astat-num">6</div><div class="astat-label">Шагов сценария</div></div>
+  <div class="astat"><div class="astat-num">30с</div><div class="astat-label">Интервал проверки</div></div>
+  <div class="astat"><div class="astat-num">0₽</div><div class="astat-label">Стоимость кода</div></div>
+</div>
+<h3>Ограничения бесплатного плана Make.com</h3>
+<p>1 000 операций/месяц. При 30-секундных проверках это 2 880 операций в день — нужен платный план ($9/мес). Но ROI очевиден при первой же сделке.</p>
+    `
+  }
+};
+
+function openArticle(key){
+  const a=articles[key];
+  if(!a)return;
+  const v=document.getElementById('article-view');
+  document.getElementById('article-inner').innerHTML=`
+    <button class="article-back" onclick="closeArticle()">← Вернуться в блог</button>
+    <span class="article-tag" style="${a.tagColor}">${a.tag}</span>
+    <h1 class="article-title">${a.title}</h1>
+    <div class="article-meta-row">
+      ${a.meta.map(m=>`<span>${m}</span>`).join('')}
+      <span class="article-result-badge">✦ ${a.result}</span>
+    </div>
+    <div class="article-body">${a.body}</div>
+    <div class="article-cta">
+      <h3>🌸 Хочешь чтобы агенты работали на тебя?</h3>
+      <p>Присоединяйся к waitlist Blomster Hage. Ранние участники получают 30% скидку и персональный онбординг.</p>
+      <button class="article-cta-btn" onclick="closeArticle()">→ Вступить в сад</button>
+    </div>
+  `;
+  v.classList.add('open');
+  v.scrollTop=0;
+}
+function closeArticle(){document.getElementById('article-view').classList.remove('open');}
+
+// NEWSLETTER
+function subscribeNL(){
+  const email=document.getElementById('nl-email').value.trim();
+  if(!email||!email.includes('@')){document.getElementById('nl-email').style.borderColor='rgba(255,100,100,.5)';return;}
+  document.getElementById('nl-msg').textContent='🌸 Подписка оформлена! Первое письмо придёт завтра утром.';
+  document.getElementById('nl-msg').style.color='#7eb87e';
+  document.getElementById('nl-email').value='';
+}
+
+// SCROLL ANIMATIONS
+const obs=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}}),{threshold:.08});
+document.querySelectorAll('.post-card,.featured-post').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(20px)';el.style.transition='opacity .55s ease, transform .55s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
