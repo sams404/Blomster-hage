@@ -1,29 +1,9 @@
 """
-Rosa Damascena — Контент-мастер (Agent 01)
-Генерирует контент для клиентов автоматически.
-
-Pipeline:
-  ResearchAgent → DraftAgent → EditAgent → SEOAgent → DeliverAgent
-
-Суб-агенты:
-  researcher  — собирает данные по теме
-  drafter     — пишет черновик
-  editor      — полирует стиль и тон
-  seo         — добавляет ключевые слова и мета
-  translator  — переводит RU → NO/EN по запросу
+Rosa Damascena — Контент-мастер ✍️🌸
+ReAct pipeline: Research → Draft → Edit → SEO → Deliver
 """
 import json
 from .base import BaseAgent, SubAgent
-from backend.email import send_content_delivery
-
-
-PROFILE_SAMSON = """
-Клиент: Samson. Живёт в Норвегии.
-Специализация: AI-автоматизация, инвестиции (aksjesparekonto), онлайн-бизнес.
-Аудитория: норвежцы 25-45, интересующиеся AI и финансами.
-Тон: профессиональный, прямой, без воды.
-Язык: русский основной, норвежский для публикаций.
-"""
 
 
 class RosaDamascena(BaseAgent):
@@ -36,123 +16,88 @@ class RosaDamascena(BaseAgent):
         self._setup_sub_agents()
 
     def _setup_sub_agents(self):
-        self.register_sub_agent("researcher", SubAgent(
-            name="Researcher",
-            system_prompt="""Ты исследователь контента.
-Задача: собрать ключевые факты, тренды и аргументы по теме.
-Формат: JSON с полями:
-{"key_facts": [], "trends": [], "target_audience": "", "hook_ideas": []}
-Отвечай ТОЛЬКО JSON без markdown."""
-        ))
+        self.add_sub("drafter", SubAgent("Drafter", """Ты опытный копирайтер.
+Пиши контент на тему. Структура: цепляющий заголовок → крючок → 3-4 блока → CTA.
+Тон: профессиональный, конкретный, без воды. Не более 600 слов."""))
 
-        self.register_sub_agent("drafter", SubAgent(
-            name="Drafter",
-            system_prompt="""Ты опытный копирайтер.
-Задача: написать черновик контента на основе исследования.
-Пиши цепляюще, конкретно, без воды.
-Структура: заголовок → крючок → 3-5 блоков → CTA."""
-        ))
+        self.add_sub("editor", SubAgent("Editor", """Ты редактор.
+Улучши текст: убери повторы, усиль аргументы, добавь конкретики.
+Верни только улучшенный текст."""))
 
-        self.register_sub_agent("editor", SubAgent(
-            name="Editor",
-            system_prompt="""Ты строгий редактор.
-Задача: улучшить текст — убрать воду, усилить аргументы, улучшить ритм.
-Сохраняй смысл. Возвращай только улучшенный текст."""
-        ))
+        self.add_sub("seo", SubAgent("SEO", """Ты SEO-специалист.
+Добавь SEO к тексту. Формат JSON:
+{"title": "...", "meta_description": "...(max 160 chars)",
+ "keywords": ["kw1","kw2","kw3"], "content": "полный текст с SEO"}
+Только JSON."""))
 
-        self.register_sub_agent("seo", SubAgent(
-            name="SEO",
-            system_prompt="""Ты SEO-специалист.
-Задача: добавить SEO-оптимизацию к тексту.
-Формат JSON:
-{"title": "...", "meta_description": "...", "keywords": [], "content": "..."}
-Отвечай ТОЛЬКО JSON."""
-        ))
+        self.add_sub("translator", SubAgent("Translator", """Ты переводчик RU→NO (bokmål).
+Переводи профессионально, сохраняй тон. Только перевод."""))
 
-        self.register_sub_agent("translator", SubAgent(
-            name="Translator",
-            system_prompt="""Ты профессиональный переводчик RU→NO.
-Задача: перевести текст на норвежский (bokmål).
-Сохраняй тон и структуру. Возвращай только перевод."""
-        ))
+    def create(self, topic: str, lang: str = "ru", client_id: str = "") -> dict:
+        self.log("create", f"{topic[:50]} [{lang}]")
 
-    def create_content_piece(self, topic: str, content_type: str = "blog",
-                              language: str = "ru", client_id: str = "") -> dict:
-        """Полный pipeline создания одного контент-юнита."""
-        self.log("start", f"{content_type}: {topic}")
-
-        # Step 1: Research sub-agent
-        research_raw = self.spawn("researcher", f"Исследуй тему: {topic}")
-        try:
-            research = json.loads(research_raw)
-        except Exception:
-            research = {"key_facts": [research_raw], "trends": [], "hook_ideas": []}
-
-        # Step 2: Draft sub-agent
-        draft = self.spawn(
-            "drafter",
-            f"Напиши {content_type} на тему: {topic}",
-            context=f"Профиль клиента:\n{PROFILE_SAMSON}\n\nИсследование:\n{json.dumps(research, ensure_ascii=False)}"
+        # 1. ReAct: поиск информации по теме
+        research = self.react(
+            f"Найди актуальную информацию и факты по теме: {topic}. "
+            f"Используй web_search. Верни ключевые факты.",
+            system_extra=f"Тема контента: {topic}\nЯзык: {lang}"
         )
 
-        # Step 3: Edit sub-agent
-        polished = self.spawn("editor", "Улучши этот текст:", context=draft)
+        # 2. Draft (суб-агент)
+        draft = self.spawn("drafter",
+                            f"Напиши статью на тему: {topic}",
+                            context=f"Факты и данные:\n{research}")
 
-        # Step 4: SEO sub-agent
-        seo_raw = self.spawn("seo", "Добавь SEO:", context=polished)
+        # 3. Edit (суб-агент)
+        edited = self.spawn("editor", "Улучши текст:", context=draft)
+
+        # 4. SEO (суб-агент)
+        seo_raw = self.spawn("seo", "Добавь SEO:", context=edited)
         try:
             seo = json.loads(seo_raw)
-            final_content = seo.get("content", polished)
-            title = seo.get("title", topic)
+            content = seo.get("content", edited)
+            title   = seo.get("title", topic)
             keywords = seo.get("keywords", [])
         except Exception:
-            final_content = polished
-            title = topic
-            keywords = []
+            content, title, keywords = edited, topic, []
 
-        # Step 5: Translate if needed
-        if language == "no":
-            final_content = self.spawn("translator", final_content)
+        # 5. Translate if needed
+        if lang == "no":
+            content = self.spawn("translator", content)
 
-        result = {
-            "title":    title,
-            "content":  final_content,
-            "keywords": keywords,
-            "type":     content_type,
-            "language": language,
-            "topic":    topic,
-        }
+        # 6. Save to vault
+        self.tools.call("save_vault",
+                         folder="05-Knowledge",
+                         title=title,
+                         content=content,
+                         tags=keywords[:3] + ["rosa", lang],
+                         category="knowledge")
 
+        # 7. Email to client (or owner)
+        import os
+        to_email = os.environ.get("OWNER_EMAIL", "")
+        if to_email:
+            self.tools.call("send_email",
+                             to=to_email,
+                             subject=f"✍️ {title}",
+                             body=f"""
+<div style="font-family:monospace;background:#080808;color:#e6e2d8;padding:40px;max-width:680px;">
+  <p style="color:#c9a96e;font-size:11px;">✍️🌸 ROSA · BLOMSTER HAGE</p>
+  <h1 style="font-size:22px;font-weight:300;">{title}</h1>
+  <div style="white-space:pre-wrap;line-height:1.8;color:rgba(230,226,216,0.8);">{content[:2000]}</div>
+</div>""")
+
+        result = {"title": title, "content": content, "keywords": keywords, "lang": lang}
         self.save_result("content", json.dumps(result, ensure_ascii=False), client_id)
         self.log("done", title)
         return result
 
     def run(self):
-        """Запускается по расписанию. Генерирует контент для всех подписчиков."""
-        subscribers = self.get_subscribers()
-        self.log("run", f"{len(subscribers)} subscribers")
-
-        # Темы недели для Samson (личный аккаунт)
-        weekly_topics = [
-            ("Aksjesparekonto 2026: топ-5 акций для норвежцев", "blog", "no"),
-            ("Как AI-агенты автоматизируют доход: реальные кейсы", "blog", "ru"),
-            ("5 AI-инструментов для фрилансера в Норвегии", "blog", "no"),
+        topics = [
+            ("Hvordan AI-agenter kan øke inntekten din i Norge 2026", "no"),
+            ("Aksjesparekonto + AI: автоматический анализ портфеля", "ru"),
         ]
-
-        for topic, ctype, lang in weekly_topics:
-            piece = self.create_content_piece(topic, ctype, lang, client_id="samson")
-            # Отправить на email
-            send_content_delivery(
-                to_email=None,  # берётся из настроек
-                subject=piece["title"],
-                content=piece["content"],
-                agent_name=self.name,
-            )
-
-        # Для платных подписчиков
-        for sub in subscribers:
-            topics = sub.get("content_topics", "AI, automation, Norway").split(",")
-            for topic in topics[:2]:  # 2 темы в неделю на план
-                self.create_content_piece(
-                    topic.strip(), "blog", "no", client_id=sub["id"]
-                )
+        results = []
+        for topic, lang in topics:
+            results.append(self.create(topic, lang))
+        return results

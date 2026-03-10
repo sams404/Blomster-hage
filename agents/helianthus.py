@@ -1,18 +1,11 @@
 """
-Helianthus — Крипто-трейдер (Agent 02)
-Автоматически анализирует рынок и рассылает сигналы подписчикам.
-
-Pipeline:
-  DataAgent → AnalystAgent → SentimentAgent → SignalAgent → PublishAgent
-
-Доход: kr 99/мес за Telegram-канал с сигналами
+Helianthus — Крипто-трейдер 📊🌻
+ReAct: Fetch prices → Analyze → Write signal → Send to subscribers
 """
-import json, requests
+import json, os
 from .base import BaseAgent, SubAgent
-from backend.email import send_signal
 
-
-COINS_TO_TRACK = ["bitcoin", "ethereum", "solana", "cardano", "polkadot"]
+COINS = ["bitcoin", "ethereum", "solana", "cardano"]
 
 
 class Helianthus(BaseAgent):
@@ -25,128 +18,105 @@ class Helianthus(BaseAgent):
         self._setup_sub_agents()
 
     def _setup_sub_agents(self):
-        self.register_sub_agent("analyst", SubAgent(
-            name="TechnicalAnalyst",
-            system_prompt="""Ты технический аналитик крипторынка.
-Анализируй данные цен и объёмов.
-Формат ответа JSON:
-{"trend": "bullish|bearish|neutral", "strength": 1-10,
- "support": price, "resistance": price,
+        self.add_sub("analyst", SubAgent("TechnicalAnalyst", """Ты технический аналитик.
+Анализируй рыночные данные. Формат JSON:
+{"trend": "bullish|bearish|neutral",
  "recommendation": "buy|sell|hold",
- "reasoning": "2-3 предложения",
- "confidence": 1-10}
-Только JSON, без markdown."""
-        ))
+ "entry_price": number,
+ "stop_loss": number,
+ "take_profit": number,
+ "confidence": 1-10,
+ "reasoning": "2-3 предложения"}
+Только JSON."""))
 
-        self.register_sub_agent("sentiment", SubAgent(
-            name="SentimentAgent",
-            system_prompt="""Ты анализируешь настроения крипторынка.
-На основе данных о цене и объёмах определи настроение рынка.
-Формат JSON:
-{"fear_greed_index": 0-100, "market_mood": "extreme_fear|fear|neutral|greed|extreme_greed",
- "key_factors": ["factor1", "factor2"], "short_term_outlook": "..."}
-Только JSON."""
-        ))
+        self.add_sub("signal_writer", SubAgent("SignalWriter", """Ты пишешь чёткие сигналы.
+Формат (2 версии — RU и NO):
+🟢/🔴/🟡 [COIN] — [ДЕЙСТВИЕ]
+💰 Вход: $X | 🛑 SL: $X | 🎯 TP: $X
+📊 Уверенность: X/10
+💡 [Объяснение 1 строка]
 
-        self.register_sub_agent("signal_writer", SubAgent(
-            name="SignalWriter",
-            system_prompt="""Ты пишешь чёткие торговые сигналы для подписчиков.
-Язык: русский + норвежский (2 версии).
-Формат: эмодзи + монета + сигнал + цена входа + стоп-лосс + тейк-профит + объяснение (1 строка).
-Пример: 🟢 BTC/USDT — ПОКУПКА | Вход: $42,000 | SL: $40,500 | TP: $46,000 | Пробой уровня сопротивления."""
-        ))
+---
+🟢/🔴/🟡 [COIN] — [HANDLING]
+💰 Inngang: $X | 🛑 SL: $X | 🎯 TP: $X
+📊 Tillit: X/10"""))
 
-    def _fetch_price_data(self, coin_id: str) -> dict:
-        """Получает данные о цене с CoinGecko (бесплатно)."""
-        try:
-            url = (f"https://api.coingecko.com/api/v3/coins/{coin_id}"
-                   f"?localization=false&tickers=false&market_data=true"
-                   f"&community_data=false&developer_data=false")
-            r = requests.get(url, timeout=10)
-            d = r.json()
-            md = d.get("market_data", {})
-            return {
-                "coin":           d["symbol"].upper(),
-                "name":           d["name"],
-                "price_usd":      md.get("current_price", {}).get("usd", 0),
-                "change_24h":     md.get("price_change_percentage_24h", 0),
-                "change_7d":      md.get("price_change_percentage_7d", 0),
-                "volume_24h":     md.get("total_volume", {}).get("usd", 0),
-                "market_cap":     md.get("market_cap", {}).get("usd", 0),
-                "ath":            md.get("ath", {}).get("usd", 0),
-                "ath_change_pct": md.get("ath_change_percentage", {}).get("usd", 0),
-            }
-        except Exception as e:
-            self.log("fetch_error", str(e))
-            return {}
+    def analyze_coin(self, coin_id: str) -> dict | None:
+        # 1. ReAct: получить данные
+        price_result = self.tools.call("crypto_price", coin_id=coin_id)
+        if not price_result.ok:
+            self.log("skip", f"{coin_id}: {price_result.error}")
+            return None
 
-    def analyze_coin(self, coin_id: str) -> dict:
-        """Полный анализ одной монеты через цепочку суб-агентов."""
-        data = self._fetch_price_data(coin_id)
-        if not data:
-            return {}
-
+        data = price_result.data
         data_str = json.dumps(data, ensure_ascii=False)
 
-        # Sub-agent 1: Technical analysis
+        # 2. Analyst sub-agent
         analysis_raw = self.spawn("analyst",
-                                   f"Проанализируй данные для {data['name']}:",
+                                   f"Проанализируй {data['name']}:",
                                    context=data_str)
         try:
             analysis = json.loads(analysis_raw)
         except Exception:
-            analysis = {"recommendation": "hold", "reasoning": analysis_raw}
+            return None
 
-        # Sub-agent 2: Sentiment
-        sentiment_raw = self.spawn("sentiment",
-                                    f"Оцени настроение рынка для {data['name']}:",
-                                    context=data_str)
-        try:
-            sentiment = json.loads(sentiment_raw)
-        except Exception:
-            sentiment = {"market_mood": "neutral"}
+        rec = analysis.get("recommendation", "hold")
+        if rec == "hold":
+            return None  # не рассылаем hold
 
-        # Sub-agent 3: Write signal
-        signal_text = self.spawn(
-            "signal_writer",
-            f"Напиши торговый сигнал для {data['name']}:",
-            context=f"Данные: {data_str}\nАнализ: {analysis_raw}\nНастроение: {sentiment_raw}"
-        )
+        # 3. Signal writer sub-agent
+        signal = self.spawn("signal_writer",
+                             f"Напиши сигнал для {data['name']}:",
+                             context=f"Данные: {data_str}\nАнализ: {analysis_raw}")
 
-        result = {
-            "coin":       data["coin"],
-            "price":      data["price_usd"],
-            "change_24h": data["change_24h"],
-            "analysis":   analysis,
-            "sentiment":  sentiment,
-            "signal":     signal_text,
-        }
-        return result
+        return {"coin": data["coin"], "analysis": analysis, "signal": signal,
+                "price": data["price_usd"], "change_24h": data["change_24h"]}
 
     def run(self):
-        """Запускается каждые 4 часа. Анализирует монеты и рассылает сигналы."""
-        self.log("run", f"analyzing {len(COINS_TO_TRACK)} coins")
-        signals = []
+        self.log("run", f"analyzing {len(COINS)} coins")
+        active_signals = []
 
-        for coin in COINS_TO_TRACK:
+        for coin in COINS:
             result = self.analyze_coin(coin)
             if not result:
                 continue
 
-            # Сохранить только если есть buy/sell сигнал (не hold)
-            rec = result.get("analysis", {}).get("recommendation", "hold")
-            if rec in ("buy", "sell"):
-                signals.append(result)
-                self.save_result("signal", json.dumps(result, ensure_ascii=False))
-                self.log("signal", f"{result['coin']} → {rec.upper()}")
+            active_signals.append(result)
+            self.save_result("signal", json.dumps(result, ensure_ascii=False))
+            self.log("signal", f"{result['coin']} → {result['analysis']['recommendation'].upper()}")
 
-        # Разослать сигналы подписчикам (план "Сад" и выше)
-        if signals:
-            subscribers = self.get_subscribers()
-            crypto_subs = [s for s in subscribers if "helianthus" in s.get("agents", "")]
-            for sub in crypto_subs:
-                signal_text = "\n\n".join(s["signal"] for s in signals)
-                send_signal(sub["email"], signal_text)
+            # Сохранить в vault
+            self.tools.call("save_vault",
+                             folder="05-Knowledge",
+                             title=f"Signal {result['coin']} {result['analysis']['recommendation'].upper()}",
+                             content=result["signal"],
+                             tags=["crypto", "signal", result["coin"].lower()],
+                             category="knowledge")
 
-        self.log("done", f"{len(signals)} active signals sent")
-        return signals
+        # Разослать подписчикам
+        if active_signals:
+            signal_text = "\n\n---\n\n".join(s["signal"] for s in active_signals)
+            subscribers = self.tools.call("read_db",
+                                           query="SELECT * FROM subscribers WHERE active=1 AND agents LIKE '%helianthus%'")
+            if subscribers.ok:
+                for sub in subscribers.data:
+                    self.tools.call("send_email",
+                                     to=sub["email"],
+                                     subject=f"📊 Крипто-сигнал | {', '.join(s['coin'] for s in active_signals)}",
+                                     body=f"""
+<div style="font-family:monospace;background:#080808;color:#e6e2d8;padding:40px;">
+  <p style="color:#c9a96e;font-size:11px;">📊🌻 HELIANTHUS SIGNAL</p>
+  <div style="white-space:pre-wrap;line-height:2;">{signal_text}</div>
+  <p style="font-size:10px;color:rgba(230,226,216,0.3);margin-top:24px;">
+    Не является финансовым советом. DYOR.</p>
+</div>""")
+
+            # Telegram (если настроен)
+            tg_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
+            if tg_chat:
+                self.tools.call("telegram_send",
+                                 chat_id=tg_chat,
+                                 message=f"📊 *Новые сигналы Blomster Hage*\n\n{signal_text[:3000]}")
+
+        self.log("done", f"{len(active_signals)} active signals")
+        return active_signals
