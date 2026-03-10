@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Blomster Hage">
+<meta name="theme-color" content="#080808">
 <title>Blomster Hage — AI Agent Garden</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -240,6 +244,49 @@ footer{padding:48px 52px;border-top:1px solid var(--border);display:flex;align-i
   .hero-title{font-size:44px;}
   .wl-row{flex-direction:column;}
   .agent-page-inner{padding:90px 24px 60px;}
+}
+
+/* IPHONE / TOUCH OPTIMIZATIONS */
+@media(pointer:coarse){
+  /* Remove custom cursor on touch devices */
+  #cur,#cur-ring{display:none;}
+  body{cursor:auto;}
+  /* Remove cursor:none from all interactive elements */
+  *{cursor:auto;}
+  button,a,.nav-link,.lang-btn,.nav-cta,.btn-primary,.btn-ghost,
+  .flower-card,.flower-detail-btn,.plan-btn,.wl-submit,.modal-close,
+  .modal-open-btn,.chat-toggle,.chat-close,.chat-sug,.chat-send,
+  .agent-back,.logo{cursor:pointer;}
+  /* Prevent tap highlight flash */
+  *{-webkit-tap-highlight-color:transparent;}
+  /* Prevent text selection on buttons */
+  button{-webkit-user-select:none;user-select:none;}
+  /* Fix iOS input zoom — must be 16px+ */
+  .wl-input,.wl-select,.chat-input{font-size:16px;}
+  /* Bigger tap targets */
+  .lang-btn{padding:8px 14px;min-height:44px;}
+  .nav-link{padding:8px 4px;min-height:44px;display:flex;align-items:center;}
+  .nav-cta{padding:12px 22px;min-height:44px;}
+  .btn-primary,.btn-ghost{padding:16px 36px;min-height:44px;}
+  .flower-detail-btn,.plan-btn,.wl-submit,.modal-open-btn{min-height:48px;}
+  .chat-send{width:48px;height:48px;}
+  .chat-sug{padding:8px 12px;min-height:36px;}
+  .chat-toggle{width:60px;height:60px;}
+  /* Safe area for iPhone notch + home bar */
+  nav{padding-top:calc(18px + env(safe-area-inset-top));padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));}
+  .chat-toggle{bottom:calc(32px + env(safe-area-inset-bottom));}
+  .chat-window{bottom:calc(104px + env(safe-area-inset-bottom));height:min(500px,calc(80vh - env(safe-area-inset-bottom)));}
+  footer{padding-bottom:calc(48px + env(safe-area-inset-bottom));}
+  /* Disable hover-only effects on touch */
+  .flower-card:hover{transform:none;box-shadow:none;}
+  .flower-card:hover::before{opacity:0;}
+  .flower-card:active{transform:translateY(-2px);}
+}
+@media(pointer:coarse) and (max-width:580px){
+  .chat-window{width:100vw;right:0;left:0;border-left:none;border-right:none;}
+  .nav-right{gap:8px;}
+  /* Hamburger-friendly nav on very small screens */
+  .nav-link{display:none;}
 }
 </style>
 </head>

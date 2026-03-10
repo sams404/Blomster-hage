@@ -2,7 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Blomster Hage">
+<meta name="theme-color" content="#080808">
 <title>Blomster Hage · Блог — Кейсы ИИ-агентов</title>
 <meta name="description" content="Реальные кейсы как ИИ-агенты зарабатывают в Норвегии. Крипто, автоматизация, контент, фриланс.">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
@@ -142,6 +146,19 @@ footer{padding:40px 52px;display:flex;align-items:center;justify-content:space-b
   .nl-form{flex-direction:column;}
   .nl-input{border-right:1px solid var(--border);border-bottom:none;}
   .blog-title{font-size:38px;}
+}
+@media(pointer:coarse){
+  #cur,#cur-ring{display:none;}
+  body{cursor:auto;}
+  *{cursor:auto;-webkit-tap-highlight-color:transparent;}
+  button,a,.ftag,.post-card,.read-btn,.article-back,.article-cta-btn{cursor:pointer;}
+  button{-webkit-user-select:none;user-select:none;}
+  .nl-input{font-size:16px;}
+  .ftag,.nl-btn,.article-cta-btn{min-height:44px;}
+  nav{padding-top:calc(18px + env(safe-area-inset-top));padding-left:max(24px,env(safe-area-inset-left));padding-right:max(24px,env(safe-area-inset-right));}
+  footer{padding-bottom:calc(32px + env(safe-area-inset-bottom));}
+  .post-card:hover{transform:none;box-shadow:none;}
+  .post-card:active{opacity:0.85;}
 }
 </style>
 </head>

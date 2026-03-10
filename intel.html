@@ -2,7 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Blomster Hage">
+<meta name="theme-color" content="#080808">
 <title>Blomster Hage · Intelligence Hub</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -229,6 +233,13 @@ body::before{content:'';position:fixed;inset:0;background:
 }
 @media(max-width:580px){
   .g2,.g3,.g4,.trend-grid{grid-template-columns:1fr;}
+}
+@media(pointer:coarse){
+  *{-webkit-tap-highlight-color:transparent;cursor:auto;}
+  button{cursor:pointer;-webkit-user-select:none;user-select:none;min-height:44px;}
+  input,select,textarea{font-size:16px;}
+  .topbar{padding-top:calc(12px + env(safe-area-inset-top));}
+  .content{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
 }
 </style>
 </head>

@@ -2,7 +2,11 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Blomster Hage">
+<meta name="theme-color" content="#080808">
 <title>Blomster Hage · Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -189,6 +193,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font
   .grid-2,.grid-3{grid-template-columns:1fr;}
   .content{padding:20px 16px;}
   .topbar{padding:14px 16px;}
+}
+@media(pointer:coarse){
+  *{-webkit-tap-highlight-color:transparent;cursor:auto;}
+  button{cursor:pointer;-webkit-user-select:none;user-select:none;}
+  input,select,textarea{font-size:16px;}
+  button{min-height:44px;}
+  .topbar{padding-top:calc(14px + env(safe-area-inset-top));}
+  .content{padding-bottom:calc(20px + env(safe-area-inset-bottom));}
 }
 </style>
 </head>
