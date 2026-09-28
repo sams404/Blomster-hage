@@ -11,7 +11,7 @@ Endpoints:
   POST /api/chat              — чат с AI (Groq)
   GET  /api/garden            — статусы агентов для garden.html
   GET  /api/finance/status    — портфель Crocus (X-Admin-Key)
-  POST /api/finance/halt      — kill switch: остановить торговлю
+  POST /api/finance/halt      — стоп: вся торговля или {"broker": "revolut"}
   POST /api/finance/resume    — возобновить торговлю
   POST /api/finance/report    — отправить отчёт сейчас
 """
@@ -205,47 +205,62 @@ def finance_status():
     if not _finance_auth():
         return jsonify({"error": "Unauthorized — задай свой ADMIN_KEY в .env"}), 403
     from backend.db import get_conn
-    mode = os.environ.get("FIN_MODE", "paper").lower()
-    conn = get_conn()
-    snaps = conn.execute(
-        "SELECT equity_usdt, equity_nok, positions, ts FROM portfolio_snapshots "
-        "WHERE mode=? ORDER BY id DESC LIMIT 48", (mode,)).fetchall()
-    trades = conn.execute(
-        "SELECT symbol, side, qty, price, quote_usdt, pnl_usdt, reason, ts FROM trades "
-        "WHERE mode=? ORDER BY id DESC LIMIT 20", (mode,)).fetchall()
+    from agents.exchanges import active_brokers, broker_mode
+    conn  = get_conn()
     state = dict(conn.execute("SELECT key, value FROM finance_state").fetchall())
+    out   = []
+    for b in active_brokers():
+        mode = broker_mode(b)
+        row  = conn.execute(
+            "SELECT equity_usdt, equity_nok, positions, ts FROM portfolio_snapshots "
+            "WHERE broker=? AND mode=? ORDER BY id DESC LIMIT 1", (b, mode)).fetchone()
+        out.append({"broker": b, "mode": mode,
+                    "halted": state.get(f"halted:{b}") == "1",
+                    "halt_reason": state.get(f"halt_reason:{b}", ""),
+                    "equity_usdt": row["equity_usdt"] if row else 0,
+                    "equity_nok": row["equity_nok"] if row else 0,
+                    "positions": json.loads(row["positions"]) if row else {},
+                    "ts": row["ts"] if row else None})
+    hist = conn.execute(
+        "SELECT equity_usdt, equity_nok, ts FROM portfolio_snapshots "
+        "WHERE broker='all' ORDER BY id DESC LIMIT 48").fetchall()
+    trades = conn.execute(
+        "SELECT broker, mode, symbol, side, qty, price, quote_usdt, pnl_usdt, reason, ts "
+        "FROM trades ORDER BY id DESC LIMIT 20").fetchall()
     conn.close()
-    latest = dict(snaps[0]) if snaps else None
-    if latest:
-        latest["positions"] = json.loads(latest["positions"])
     return jsonify({
-        "mode": mode, "broker": os.environ.get("FIN_BROKER", "binance"),
         "halted": state.get("halted") == "1", "halt_reason": state.get("halt_reason", ""),
-        "latest": latest,
-        "history": [{"nok": s["equity_nok"], "ts": s["ts"]} for s in reversed(snaps)],
+        "total": {"equity_nok": hist[0]["equity_nok"], "equity_usdt": hist[0]["equity_usdt"]}
+                 if hist else None,
+        "brokers": out,
+        "history": [{"nok": h["equity_nok"], "ts": h["ts"]} for h in reversed(hist)],
         "trades": [dict(t) for t in trades],
     })
 
 
 @app.route("/api/finance/halt", methods=["POST"])
 def finance_halt():
+    """Body {"broker": "binance"|"revolut"} — стоп одной биржи, без него — всей торговли."""
     if not _finance_auth():
         return jsonify({"error": "Unauthorized"}), 403
+    broker = (request.get_json(silent=True) or {}).get("broker", "")
+    if broker not in ("", "binance", "revolut"):
+        return jsonify({"error": "unknown broker"}), 400
     from agents.crocus import CrocusAurum
-    CrocusAurum().halt("Остановлено вручную из приложения")
-    return jsonify({"ok": True, "halted": True})
+    CrocusAurum().halt("Остановлено вручную из приложения", broker)
+    return jsonify({"ok": True, "halted": True, "broker": broker or "all"})
 
 
 @app.route("/api/finance/resume", methods=["POST"])
 def finance_resume():
     if not _finance_auth():
         return jsonify({"error": "Unauthorized"}), 403
+    broker = (request.get_json(silent=True) or {}).get("broker", "")
+    if broker not in ("", "binance", "revolut"):
+        return jsonify({"error": "unknown broker"}), 400
     from agents.crocus import CrocusAurum
-    a = CrocusAurum()
-    a.set_state("halted", "0")
-    a.set_state("halt_reason", "")
-    a.log("resume", "торговля возобновлена вручную")
-    return jsonify({"ok": True, "halted": False})
+    CrocusAurum().resume(broker)
+    return jsonify({"ok": True, "halted": False, "broker": broker or "all"})
 
 
 @app.route("/api/finance/report", methods=["POST"])

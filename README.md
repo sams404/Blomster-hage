@@ -45,26 +45,29 @@ npx netlify-cli deploy --prod --dir .
 
 ## 💰🌼 Финансовый агент — Crocus Aurum
 
-Каждый час: портфель → риск-проверки → EMA/RSI → ордер → уведомление в Telegram.
-Каждый вечер в 21:00: отчёт в NOK (P&L, сделки, оценка налога 22%) → email + Telegram.
+Торгует **одновременно на Binance и Revolut X** (`FIN_BROKERS=binance,revolut`).
+Каждый час, для каждой биржи: портфель → риск-проверки → EMA/RSI по свечам этой биржи →
+ордер → уведомление в Telegram. В 21:00 — общий отчёт в NOK: по биржам, P&L,
+спред Revolut X vs Binance, оценка налога 22% → email + Telegram.
 
 ```bash
 cp .env.example .env          # задай ADMIN_KEY, TELEGRAM_*, FIN_*
+pip install -r requirements.txt
 python run.py test crocus     # один цикл + отчёт (paper)
 python run.py all             # API + все агенты по расписанию
 ```
 
-| Режим | Деньги | Что нужно |
-|-------|--------|-----------|
-| `paper` | виртуальные 1000 USDT | ничего |
-| `testnet` | фейковые, реальные ордера | ключи testnet.binance.vision |
-| `live` | **реальные** | ключ Binance без Withdraw + `FIN_LIVE_CONFIRM` |
+| Режим | Binance | Revolut X |
+|-------|---------|-----------|
+| `paper` | виртуальные 1000 USDT | виртуальные 1000 USD |
+| `testnet` | фейковые деньги, реальные ордера | — (нет testnet) |
+| `live` | ключ без Withdraw + `FIN_LIVE_CONFIRM` | Ed25519-ключ + `FIN_LIVE_CONFIRM` |
 
-Revolut: у обычного приложения (акции) API нет. Есть только у крипто-биржи **Revolut X**.
-Адаптер для неё экспериментальный: `FIN_BROKER=revolut`, `REVOLUT_X_TRADING=1`.
+Режим можно задать на биржу отдельно: `FIN_MODE_BINANCE=live`, `FIN_MODE_REVOLUT=paper`.
+Revolut: API есть только у крипто-биржи Revolut X; акции в обычном приложении API не имеют.
 
-Защита: лимит на ордер, лимит позиции, стоп-лосс, автостоп при дневном убытке,
-лимит сделок в день, кнопка «Стоп торговля» в приложении (`/api/finance/halt`).
+Защита (на каждой бирже): лимит на ордер, лимит позиции, стоп-лосс, автостоп при
+дневном убытке, лимит сделок в день. В приложении: «⏸ Пауза» для одной биржи и «🛑 Стоп всё».
 
 ## Стек
 

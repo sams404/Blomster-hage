@@ -40,9 +40,11 @@ Intel Hub использует cyan (#4fc3f7) вместо gold.
 | 06 | 🧠🔮 | ИИ-аналитик | Iris Intelligence | Soon |
 | 07 | 💰🌼 | Финансист | Crocus Aurum | Active (paper) |
 
-Crocus (`agents/crocus.py`, `agents/exchanges.py`): торгует по EMA20/50 + RSI,
-лимиты риска и kill switch в коде, LLM только комментирует отчёт.
-Режимы FIN_MODE: paper → testnet → live. Никогда не давать API-ключам право вывода.
+Crocus (`agents/crocus.py`, `agents/exchanges.py`): торгует одновременно на
+Binance (USDT) и Revolut X (USD) по EMA20/50 + RSI на свечах каждой биржи.
+Лимиты риска, автостоп и пауза — на каждую биржу отдельно; LLM только комментирует отчёт.
+Режимы FIN_MODE / FIN_MODE_<BROKER>: paper → testnet (только Binance) → live.
+Никогда не давать API-ключам право вывода.
 
 ## Тарифы (NOK/мес)
 - 🌱 Росток: kr 149 — 1 агент

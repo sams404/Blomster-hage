@@ -98,6 +98,7 @@ def init_db():
     CREATE TABLE IF NOT EXISTS portfolio_snapshots (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         mode        TEXT NOT NULL,
+        broker      TEXT NOT NULL DEFAULT 'binance',  -- binance | revolut | all
         equity_usdt REAL NOT NULL,
         equity_nok  REAL NOT NULL,
         positions   TEXT DEFAULT '{}',
@@ -109,6 +110,11 @@ def init_db():
         value TEXT NOT NULL
     );
     """)
+    # Миграция: снимки портфеля до мульти-биржевой версии были без broker
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(portfolio_snapshots)")]
+    if "broker" not in cols:
+        conn.execute("ALTER TABLE portfolio_snapshots "
+                     "ADD COLUMN broker TEXT NOT NULL DEFAULT 'binance'")
     conn.commit()
     conn.close()
     print("✅ Database initialized:", DB_PATH)

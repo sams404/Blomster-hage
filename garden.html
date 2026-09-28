@@ -137,6 +137,13 @@ input{font-family:inherit;font-size:16px;}
 .steps li:last-child{border-bottom:none;}
 .steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:20px;height:20px;border:1px solid var(--gold);color:var(--gold);font-size:10px;display:flex;align-items:center;justify-content:center;}
 code{background:var(--s3);padding:1px 5px;font-size:11px;color:var(--gold);}
+.broker+.broker{margin-top:2px;}
+.broker-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.broker-head b{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;}
+.broker-head small{display:block;color:var(--muted);font-size:10px;margin-top:2px;}
+.broker-kr{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--gold);white-space:nowrap;}
+.btn.small{min-height:40px;margin-top:10px;font-size:10px;padding:8px;}
+.btn:disabled{opacity:.35;}
 .toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translate(-50%,20px);background:var(--s3);border:1px solid var(--border2);padding:10px 16px;font-size:12px;opacity:0;transition:all .3s;z-index:50;pointer-events:none;max-width:90%;}
 .toast.on{opacity:1;transform:translate(-50%,0);}
 
@@ -211,13 +218,13 @@ code{background:var(--s3);padding:1px 5px;font-size:11px;color:var(--gold);}
       <div class="sec">
         <div class="card" style="padding:10px 6px 4px;"><svg class="spark" id="spark" viewBox="0 0 300 90" preserveAspectRatio="none"></svg></div>
         <div class="btn-row">
-          <button class="btn danger" id="btn-halt" data-ru="🛑 Стоп торговля" data-no="🛑 Stopp handel" data-en="🛑 Stop trading">🛑 Стоп торговля</button>
+          <button class="btn danger" id="btn-halt" data-ru="🛑 Стоп всё" data-no="🛑 Stopp alt" data-en="🛑 Stop all">🛑 Стоп всё</button>
           <button class="btn" id="btn-report" data-ru="📄 Отчёт сейчас" data-no="📄 Rapport nå" data-en="📄 Report now">📄 Отчёт сейчас</button>
         </div>
       </div>
       <div class="sec">
-        <div class="sec-tag" data-ru="Позиции" data-no="Posisjoner" data-en="Positions">Позиции</div>
-        <div class="card" id="f-pos"></div>
+        <div class="sec-tag" data-ru="Биржи" data-no="Børser" data-en="Exchanges">Биржи</div>
+        <div id="f-pos"></div>
       </div>
       <div class="sec">
         <div class="sec-tag" data-ru="Последние сделки" data-no="Siste handler" data-en="Recent trades">Последние сделки</div>
@@ -382,15 +389,19 @@ async function api(path, opts={}){
 }
 
 function demoFinance(){
-  const hist=[]; let v=9500;
-  for(let i=0;i<48;i++){v+=Math.sin(i/5)*40+(Math.random()-.45)*30; hist.push({nok:Math.round(v)});}
-  return {mode:'paper',broker:'binance',halted:false,history:hist,
-    latest:{equity_nok:hist.at(-1).nok,equity_usdt:+(hist.at(-1).nok/10.5).toFixed(2),positions:{
-      USDT:{qty:852.4,value_usdt:852.4},ETH:{qty:0.0186,value_usdt:50.1},BTC:{qty:0.0006,value_usdt:50.2}}},
+  const hist=[]; let v=19000;
+  for(let i=0;i<48;i++){v+=Math.sin(i/5)*70+(Math.random()-.45)*50; hist.push({nok:Math.round(v)});}
+  const half=Math.round(hist.at(-1).nok/2);
+  return {halted:false,history:hist,total:{equity_nok:hist.at(-1).nok,equity_usdt:+(hist.at(-1).nok/9.5).toFixed(2)},
+    brokers:[
+      {broker:'binance',mode:'paper',halted:false,equity_nok:half,equity_usdt:+(half/9.5).toFixed(2),positions:{
+        USDT:{qty:950,value_usdt:950},ETH:{qty:0.0186,value_usdt:50.1}}},
+      {broker:'revolut',mode:'paper',halted:false,equity_nok:half,equity_usdt:+(half/9.5).toFixed(2),positions:{
+        USD:{qty:950,value_usdt:950},BTC:{qty:0.0006,value_usdt:50.2}}}],
     trades:[
-      {symbol:'BTCUSDT',side:'BUY',price:83545,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 52',ts:'2026-09-28 08:05'},
-      {symbol:'ETHUSDT',side:'SELL',price:2651,quote_usdt:48.9,pnl_usdt:-1.12,reason:'stop-loss −4%',ts:'2026-09-27 16:05'},
-      {symbol:'ETHUSDT',side:'BUY',price:2684,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 48',ts:'2026-09-27 12:05'}]};
+      {broker:'revolut',mode:'paper',symbol:'BTC-USD',side:'BUY',price:83498,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 52',ts:'2026-09-28 08:05'},
+      {broker:'binance',mode:'paper',symbol:'ETHUSDT',side:'SELL',price:2651,quote_usdt:48.9,pnl_usdt:-1.12,reason:'stop-loss −4%',ts:'2026-09-27 16:05'},
+      {broker:'binance',mode:'paper',symbol:'ETHUSDT',side:'BUY',price:2684,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 48',ts:'2026-09-27 12:05'}]};
 }
 
 async function load(){
@@ -422,26 +433,28 @@ function renderGarden(){
   document.getElementById('k-active').textContent = AGENTS.filter(a=>a.status==='active').length;
   const total = Object.values(gardenData).reduce((s,g)=>s+(g.results||0),0);
   document.getElementById('k-results').textContent = total || '—';
-  document.getElementById('k-nok').textContent = fin?.latest ? fmt(fin.latest.equity_nok) : '—';
+  document.getElementById('k-nok').textContent = fin?.total ? fmt(fin.total.equity_nok) : '—';
 }
 
 /* ── Render: finance ────────────────────────────────────── */
+const BROKER_NAME={binance:'Binance',revolut:'Revolut X'};
 function renderFinance(){
   if(!fin) return;
   const crocus = AGENTS.find(a=>a.id==='crocus');
   document.getElementById('fin-fig').innerHTML = figure(crocus);
-  const L = fin.latest || {equity_nok:0,equity_usdt:0,positions:{}};
-  document.getElementById('f-nok').textContent = fmt(L.equity_nok);
+  const T = fin.total || {equity_nok:0,equity_usdt:0};
+  const rate = T.equity_usdt ? T.equity_nok/T.equity_usdt : 10.5;
+  document.getElementById('f-nok').textContent = fmt(T.equity_nok);
   const h = fin.history||[];
   const ch = h.length>1 ? h.at(-1).nok - h[0].nok : 0;
   const chEl=document.getElementById('f-change');
   chEl.className='fin-change '+(ch>=0?'pos':'neg');
-  chEl.textContent = h.length>1 ? `${ch>=0?'+':''}${fmt(ch)} kr · ${(ch/h[0].nok*100).toFixed(2)}%` : '';
+  chEl.textContent = h.length>1 && h[0].nok ? `${ch>=0?'+':''}${fmt(ch)} kr · ${(ch/h[0].nok*100).toFixed(2)}%` : '';
+  const brokers = fin.brokers||[];
   const B=[];
   if(finDemo) B.push(`<span class="badge demo">${t({ru:'демо',no:'demo',en:'demo'})}</span>`);
-  B.push(`<span class="badge ${fin.mode==='live'?'live':'paper'}">${fin.mode}</span>`);
-  B.push(`<span class="badge">${fin.broker}</span>`);
-  if(fin.halted) B.push(`<span class="badge halt">${t({ru:'остановлен',no:'stoppet',en:'halted'})}</span>`);
+  brokers.forEach(b=>B.push(`<span class="badge ${b.mode==='live'?'live':'paper'}">${BROKER_NAME[b.broker]||b.broker} · ${b.mode}</span>`));
+  if(fin.halted) B.push(`<span class="badge halt">${t({ru:'всё остановлено',no:'alt stoppet',en:'all halted'})}</span>`);
   document.getElementById('f-badges').innerHTML = B.join('');
 
   // sparkline
@@ -455,21 +468,38 @@ function renderFinance(){
       <polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
   } else sv.innerHTML=`<text x="150" y="50" text-anchor="middle" fill="rgba(230,226,216,.38)" font-size="10">${t({ru:'нет данных',no:'ingen data',en:'no data yet'})}</text>`;
 
-  const pos=Object.entries(L.positions||{});
-  document.getElementById('f-pos').innerHTML = pos.length ? pos.map(([a,p])=>`
-    <div class="row"><div>${a}<small>${(+p.qty).toPrecision(4)}</small></div><div>${(+p.value_usdt).toFixed(2)} USDT<small style="text-align:right">≈ kr ${fmt(p.value_usdt*(L.equity_usdt?L.equity_nok/L.equity_usdt:10.5))}</small></div></div>`).join('')
-    : `<p class="note">${t({ru:'Пока пусто',no:'Tomt ennå',en:'Empty for now'})}</p>`;
+  // по биржам
+  document.getElementById('f-pos').innerHTML = brokers.length ? brokers.map(b=>{
+    const pos=Object.entries(b.positions||{});
+    const off = fin.halted || b.halted;
+    return `<div class="card broker">
+      <div class="broker-head"><div><b>${BROKER_NAME[b.broker]||b.broker}</b> <span class="badge ${b.mode==='live'?'live':'paper'}">${b.mode}</span>${b.halted?` <span class="badge halt">${t({ru:'стоп',no:'stopp',en:'halted'})}</span>`:''}
+        <small>${b.halt_reason?esc(b.halt_reason):(b.ts?ts(b.ts):'')}</small></div>
+        <div class="broker-kr">kr ${fmt(b.equity_nok)}</div></div>
+      ${pos.length ? pos.map(([a,p])=>`<div class="row"><div>${a}<small>${(+p.qty).toPrecision(4)}</small></div><div style="text-align:right">${(+p.value_usdt).toFixed(2)}<small>≈ kr ${fmt(p.value_usdt*rate)}</small></div></div>`).join('')
+        : `<p class="note">${t({ru:'Пока пусто',no:'Tomt ennå',en:'Empty for now'})}</p>`}
+      <button class="btn danger small${b.halted?' resume':''}" data-broker="${b.broker}" data-halted="${b.halted?1:0}" ${fin.halted?'disabled':''}>${b.halted?t({ru:'▶️ Запустить',no:'▶️ Start',en:'▶️ Start'}):t({ru:'⏸ Пауза',no:'⏸ Pause',en:'⏸ Pause'})} ${BROKER_NAME[b.broker]||''}</button>
+    </div>`;}).join('')
+    : `<div class="card"><p class="note">${t({ru:'Биржи не подключены',no:'Ingen børser tilkoblet',en:'No exchanges connected'})}</p></div>`;
+  document.querySelectorAll('#f-pos [data-broker]').forEach(btn=>btn.onclick=()=>toggleBroker(btn.dataset.broker, btn.dataset.halted==='1'));
 
   const tr=fin.trades||[];
   document.getElementById('f-trades').innerHTML = tr.length ? tr.map(x=>`
-    <div class="row"><div><span class="${x.side==='BUY'?'pos':'neg'}">${x.side==='BUY'?'🟢':'🔴'} ${x.side}</span> ${x.symbol}<small>${esc(x.reason||'')} · ${ts(x.ts)}</small></div>
-    <div style="text-align:right">${(+x.price).toFixed(2)}<small class="${x.pnl_usdt==null?'':(x.pnl_usdt>=0?'pos':'neg')}">${x.pnl_usdt==null?(+x.quote_usdt).toFixed(2)+' USDT':(x.pnl_usdt>=0?'+':'')+(+x.pnl_usdt).toFixed(2)+' P&L'}</small></div></div>`).join('')
+    <div class="row"><div><span class="${x.side==='BUY'?'pos':'neg'}">${x.side==='BUY'?'🟢':'🔴'} ${x.side}</span> ${x.symbol}<small>${BROKER_NAME[x.broker]||x.broker||''} · ${esc(x.reason||'')} · ${ts(x.ts)}</small></div>
+    <div style="text-align:right">${(+x.price).toFixed(2)}<small class="${x.pnl_usdt==null?'':(x.pnl_usdt>=0?'pos':'neg')}">${x.pnl_usdt==null?(+x.quote_usdt).toFixed(2):(x.pnl_usdt>=0?'+':'')+(+x.pnl_usdt).toFixed(2)+' P&L'}</small></div></div>`).join('')
     : `<p class="note">${t({ru:'Сделок ещё не было',no:'Ingen handler ennå',en:'No trades yet'})}</p>`;
 
   const hb=document.getElementById('btn-halt');
   hb.classList.toggle('resume',!!fin.halted);
-  hb.textContent = fin.halted ? t({ru:'▶️ Возобновить',no:'▶️ Gjenoppta',en:'▶️ Resume'}) : t({ru:'🛑 Стоп торговля',no:'🛑 Stopp handel',en:'🛑 Stop trading'});
+  hb.textContent = fin.halted ? t({ru:'▶️ Возобновить всё',no:'▶️ Gjenoppta alt',en:'▶️ Resume all'}) : t({ru:'🛑 Стоп всё',no:'🛑 Stopp alt',en:'🛑 Stop all'});
   document.getElementById('in-api').value = apiBase;
+}
+async function toggleBroker(broker, halted){
+  if(finDemo) return toast(t({ru:'Сначала подключи API',no:'Koble til API først',en:'Connect the API first'}));
+  try{
+    await api(halted?'/api/finance/resume':'/api/finance/halt',{method:'POST',body:JSON.stringify({broker})});
+    toast((halted?'▶️ ':'⏸ ')+(BROKER_NAME[broker]||broker)); load();
+  }catch(e){ toast('⚠️ '+e.message); }
 }
 
 /* ── Render: feed ───────────────────────────────────────── */
