@@ -7,7 +7,7 @@
   python run.py all          # всё вместе (production)
   python run.py test <agent> # тест одного агента
 """
-import sys, os
+import sys, os, json
 from dotenv import load_dotenv
 
 os.chdir(os.path.dirname(__file__))
@@ -62,9 +62,16 @@ def test_agent(name: str):
         from agents.iris import IrisIntelligence
         r = IrisIntelligence().morning_brief()
         print("\n🧠 Brief:", str(r)[:500])
+    elif name == "crocus":
+        from agents.crocus import CrocusAurum
+        a = CrocusAurum()
+        r = a.run()
+        print("\n💰 Cycle:", json.dumps(r, ensure_ascii=False, default=str)[:800])
+        rep = a.report()
+        print("\n📄 Report:", rep.get("comment", "")[:300])
     else:
         print(f"Unknown agent: {name}")
-        print("Available: rosa, helianthus, poppy, fern, iris")
+        print("Available: rosa, helianthus, poppy, fern, iris, crocus")
 
 
 if __name__ == "__main__":

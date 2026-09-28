@@ -77,6 +77,37 @@ def init_db():
         status        TEXT DEFAULT 'pending',
         ts            TEXT DEFAULT (datetime('now'))
     );
+
+    -- Crocus Aurum (финансовый агент)
+    CREATE TABLE IF NOT EXISTS trades (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        mode       TEXT NOT NULL,
+        broker     TEXT NOT NULL,
+        symbol     TEXT NOT NULL,
+        side       TEXT NOT NULL,
+        qty        REAL NOT NULL,
+        price      REAL NOT NULL,
+        quote_usdt REAL NOT NULL,
+        fee        REAL DEFAULT 0,
+        pnl_usdt   REAL,
+        reason     TEXT DEFAULT '',
+        order_id   TEXT DEFAULT '',
+        ts         TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        mode        TEXT NOT NULL,
+        equity_usdt REAL NOT NULL,
+        equity_nok  REAL NOT NULL,
+        positions   TEXT DEFAULT '{}',
+        ts          TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS finance_state (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
     """)
     conn.commit()
     conn.close()

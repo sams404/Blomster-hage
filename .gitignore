@@ -5,4 +5,8 @@ node_modules/
 *.log
 dist/
 .vercel/
-data/\n.env\n__pycache__/\n*.pyc\n*.db
+__pycache__/
+*.pyc
+*.pem
+data/
+*.db

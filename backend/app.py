@@ -9,6 +9,11 @@ Endpoints:
   GET  /api/results           — результаты агентов
   POST /api/run/<agent>       — ручной запуск агента (admin)
   POST /api/chat              — чат с AI (Groq)
+  GET  /api/garden            — статусы агентов для garden.html
+  GET  /api/finance/status    — портфель Crocus (X-Admin-Key)
+  POST /api/finance/halt      — kill switch: остановить торговлю
+  POST /api/finance/resume    — возобновить торговлю
+  POST /api/finance/report    — отправить отчёт сейчас
 """
 import os, json, hmac, hashlib
 from flask import Flask, request, jsonify
@@ -165,6 +170,92 @@ def run_agent(agent_name: str):
         agent = getattr(mod, class_name)()
         result = agent.run()
         return jsonify({"ok": True, "result": str(result)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ── Garden (статусы агентов для garden.html) ─────────────────
+@app.route("/api/garden", methods=["GET"])
+def garden():
+    from backend.db import get_conn
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT l.agent, l.action, l.detail, l.ts FROM agent_logs l
+        JOIN (SELECT agent, MAX(id) mid FROM agent_logs GROUP BY agent) m ON l.id = m.mid
+    """).fetchall()
+    counts = conn.execute(
+        "SELECT agent, COUNT(*) n FROM agent_results GROUP BY agent").fetchall()
+    conn.close()
+    n = {r["agent"]: r["n"] for r in counts}
+    return jsonify({"agents": {r["agent"]: {"last_action": r["action"],
+                                            "detail": r["detail"][:120], "ts": r["ts"],
+                                            "results": n.get(r["agent"], 0)} for r in rows}})
+
+
+# ── Finance (Crocus Aurum) — только владелец ─────────────────
+def _finance_auth() -> bool:
+    """Финансы доступны только с настоящим ADMIN_KEY (не дефолтным)."""
+    key = os.environ.get("ADMIN_KEY", "")
+    return bool(key) and key != "blomster-admin-2026" and \
+        hmac.compare_digest(request.headers.get("X-Admin-Key", ""), key)
+
+
+@app.route("/api/finance/status", methods=["GET"])
+def finance_status():
+    if not _finance_auth():
+        return jsonify({"error": "Unauthorized — задай свой ADMIN_KEY в .env"}), 403
+    from backend.db import get_conn
+    mode = os.environ.get("FIN_MODE", "paper").lower()
+    conn = get_conn()
+    snaps = conn.execute(
+        "SELECT equity_usdt, equity_nok, positions, ts FROM portfolio_snapshots "
+        "WHERE mode=? ORDER BY id DESC LIMIT 48", (mode,)).fetchall()
+    trades = conn.execute(
+        "SELECT symbol, side, qty, price, quote_usdt, pnl_usdt, reason, ts FROM trades "
+        "WHERE mode=? ORDER BY id DESC LIMIT 20", (mode,)).fetchall()
+    state = dict(conn.execute("SELECT key, value FROM finance_state").fetchall())
+    conn.close()
+    latest = dict(snaps[0]) if snaps else None
+    if latest:
+        latest["positions"] = json.loads(latest["positions"])
+    return jsonify({
+        "mode": mode, "broker": os.environ.get("FIN_BROKER", "binance"),
+        "halted": state.get("halted") == "1", "halt_reason": state.get("halt_reason", ""),
+        "latest": latest,
+        "history": [{"nok": s["equity_nok"], "ts": s["ts"]} for s in reversed(snaps)],
+        "trades": [dict(t) for t in trades],
+    })
+
+
+@app.route("/api/finance/halt", methods=["POST"])
+def finance_halt():
+    if not _finance_auth():
+        return jsonify({"error": "Unauthorized"}), 403
+    from agents.crocus import CrocusAurum
+    CrocusAurum().halt("Остановлено вручную из приложения")
+    return jsonify({"ok": True, "halted": True})
+
+
+@app.route("/api/finance/resume", methods=["POST"])
+def finance_resume():
+    if not _finance_auth():
+        return jsonify({"error": "Unauthorized"}), 403
+    from agents.crocus import CrocusAurum
+    a = CrocusAurum()
+    a.set_state("halted", "0")
+    a.set_state("halt_reason", "")
+    a.log("resume", "торговля возобновлена вручную")
+    return jsonify({"ok": True, "halted": False})
+
+
+@app.route("/api/finance/report", methods=["POST"])
+def finance_report():
+    if not _finance_auth():
+        return jsonify({"error": "Unauthorized"}), 403
+    from agents.crocus import CrocusAurum
+    try:
+        rep = CrocusAurum().report()
+        return jsonify({"ok": True, "report": json.loads(json.dumps(rep, default=str))})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 

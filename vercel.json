@@ -2,21 +2,53 @@
   "version": 2,
   "name": "blomster-hage",
   "builds": [
-    { "src": "*.html", "use": "@vercel/static" }
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "manifest.webmanifest",
+      "use": "@vercel/static"
+    }
   ],
   "routes": [
-    { "src": "/", "dest": "/index.html" },
-    { "src": "/blog", "dest": "/blog.html" },
-    { "src": "/admin", "dest": "/admin.html" },
-    { "src": "/intel", "dest": "/intel.html" }
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/blog",
+      "dest": "/blog.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/intel",
+      "dest": "/intel.html"
+    },
+    {
+      "src": "/garden",
+      "dest": "/garden.html"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
     }
   ]

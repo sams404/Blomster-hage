@@ -11,6 +11,8 @@ Orchestrator v2 — Планировщик агентов.
   18:00 — Iris    вечерний отчёт
   20:00 — Helianthus
   09:00вс — Fern  еженедельная оптимизация
+  xx:05   — Crocus торговый цикл (каждый час)
+  21:00   — Crocus финансовый отчёт
 """
 import sys, signal, logging
 from dotenv import load_dotenv
@@ -62,6 +64,14 @@ def main():
         from agents.fern import FernProtocol
         FernProtocol().run()
 
+    def run_crocus():
+        from agents.crocus import CrocusAurum
+        CrocusAurum().run()
+
+    def run_crocus_report():
+        from agents.crocus import CrocusAurum
+        CrocusAurum().report()
+
     s = BlockingScheduler(timezone="Europe/Oslo")
 
     # Iris — утро и вечер
@@ -83,6 +93,12 @@ def main():
     # Fern — воскресенье
     s.add_job(job("Fern", run_fern),
               CronTrigger(day_of_week="sun", hour=9, minute=0), id="fern")
+
+    # Crocus — торговля каждый час, отчёт вечером
+    s.add_job(job("Crocus", run_crocus),
+              CronTrigger(minute=5), id="crocus")
+    s.add_job(job("Crocus Report", run_crocus_report),
+              CronTrigger(hour=21, minute=0), id="crocus_report")
 
     def shutdown(sig, frame):
         log.info("Shutting down...")

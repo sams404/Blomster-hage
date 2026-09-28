@@ -9,6 +9,7 @@ index.html   — публичный сайт (главная, агенты, wait
 blog.html    — блог с кейсами (6 статей, фильтрация, newsletter)
 admin.html   — панель управления (waitlist, рассылка, метрики)
 intel.html   — Intelligence Hub (тренды, задачи фриланса, AI-питчи)
+garden.html  — приложение: агенты-фигурки, финансы Crocus, лента (PWA)
 CLAUDE.md    — этот файл
 ```
 
@@ -28,7 +29,7 @@ CLAUDE.md    — этот файл
 ```
 Intel Hub использует cyan (#4fc3f7) вместо gold.
 
-## Агенты (6 штук)
+## Агенты (7 штук)
 | # | Emoji | Name | Codename | Status |
 |---|-------|------|----------|--------|
 | 01 | ✍️🌸 | Контент-мастер | Rosa Damascena | Active |
@@ -37,6 +38,11 @@ Intel Hub использует cyan (#4fc3f7) вместо gold.
 | 04 | 🤝🌺 | Аутрич-охотник | Poppy Sales | Beta |
 | 05 | 🎬🌷 | Видео-резчик | Tulipa Reels | Beta |
 | 06 | 🧠🔮 | ИИ-аналитик | Iris Intelligence | Soon |
+| 07 | 💰🌼 | Финансист | Crocus Aurum | Active (paper) |
+
+Crocus (`agents/crocus.py`, `agents/exchanges.py`): торгует по EMA20/50 + RSI,
+лимиты риска и kill switch в коде, LLM только комментирует отчёт.
+Режимы FIN_MODE: paper → testnet → live. Никогда не давать API-ключам право вывода.
 
 ## Тарифы (NOK/мес)
 - 🌱 Росток: kr 149 — 1 агент

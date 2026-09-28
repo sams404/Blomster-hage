@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hagen">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23080808'/%3E%3Ctext x='50' y='66' font-size='56' text-anchor='middle'%3E🌸%3C/text%3E%3C/svg%3E">
+<title>Blomster Hage — Сад агентов</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#080808;--s1:#0f0f0f;--s2:#141414;--s3:#1b1b1b;
+  --border:rgba(255,255,255,0.055);--border2:rgba(255,255,255,0.1);
+  --text:#e6e2d8;--muted:rgba(230,226,216,0.38);--dim:rgba(230,226,216,0.16);
+  --gold:#c9a96e;--gold-glow:rgba(201,169,110,0.12);
+  --green:#7fb77e;--red:#e07a6a;--amber:#e3b25a;
+  --soil:#16110b;--grass:#1c2618;--stem:#4f7a45;--leaf:#6a9a5b;
+  --crocus:#a58bd6;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-weight:300;font-size:13px;line-height:1.6;overflow:hidden;}
+button{font-family:inherit;color:inherit;cursor:pointer;}
+input{font-family:inherit;font-size:16px;}
+
+/* APP SHELL */
+.app{position:relative;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);border-left:1px solid var(--border);border-right:1px solid var(--border);}
+.topbar{padding:calc(var(--safe-t) + 14px) 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(8,8,8,0.92);backdrop-filter:blur(20px);z-index:5;}
+.logo{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:300;letter-spacing:.05em;text-decoration:none;color:var(--text);}
+.logo em{color:var(--gold);font-style:italic;}
+.lang-switch{display:flex;gap:4px;}
+.lang-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:10px;letter-spacing:.1em;padding:6px 9px;min-height:32px;}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);}
+.screens{flex:1;overflow:hidden;position:relative;}
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:24px;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .3s,transform .3s;}
+.screen.on{opacity:1;pointer-events:auto;transform:none;}
+
+/* TAB BAR */
+.tabbar{display:flex;border-top:1px solid var(--border);background:rgba(8,8,8,0.96);padding-bottom:var(--safe-b);z-index:5;}
+.tab{flex:1;background:none;border:none;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:9px;letter-spacing:.14em;text-transform:uppercase;min-height:56px;transition:color .2s;}
+.tab .ti{font-size:20px;line-height:1;filter:grayscale(1) opacity(.55);transition:filter .2s;}
+.tab.on{color:var(--gold);}
+.tab.on .ti{filter:none;}
+
+/* GARDEN SCENE */
+.hello{padding:22px 20px 6px;}
+.hello-tag{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);}
+.hello-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;line-height:1.1;margin-top:6px;}
+.hello-title em{font-style:italic;color:var(--muted);}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:16px 20px 0;background:var(--border);border:1px solid var(--border);}
+.kpi{background:var(--s1);padding:12px 10px;text-align:center;}
+.kpi-n{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--gold);line-height:1.1;}
+.kpi-l{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-top:3px;}
+
+.garden{position:relative;margin:18px 0 0;padding:26px 8px 34px;background:
+  radial-gradient(ellipse 70% 40% at 50% 0%,var(--gold-glow),transparent 70%),
+  linear-gradient(to bottom,transparent 0%,transparent 62%,var(--grass) 62%,var(--soil) 100%);
+  display:grid;grid-template-columns:repeat(4,1fr);row-gap:8px;}
+.garden::before{content:'';position:absolute;left:0;right:0;top:62%;height:1px;background:linear-gradient(90deg,transparent,rgba(127,183,126,.35),transparent);}
+.fig{position:relative;display:flex;flex-direction:column;align-items:center;background:none;border:none;padding:0 2px;min-height:180px;justify-content:flex-end;}
+.fig:nth-child(n+5){margin-top:-6px;}
+.fig svg{width:100%;max-width:96px;height:auto;overflow:visible;}
+.fig .body{transform-origin:50% 100%;animation:sway 4s ease-in-out infinite;}
+.fig[data-status="beta"] .body{animation-duration:6s;}
+.fig[data-status="soon"] .body{animation:none;}
+.fig .eyes{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite;}
+.fig:active svg{transform:scale(.95);}
+.fig-name{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:4px;text-align:center;line-height:1.3;}
+.fig-name b{display:block;color:var(--text);font-weight:400;font-family:'Cormorant Garamond',serif;font-size:14px;letter-spacing:.02em;text-transform:none;}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;vertical-align:1px;}
+.dot.active{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+.dot.beta{background:var(--amber);}
+.dot.soon{background:var(--dim);}
+.bubble{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border2);font-size:9px;line-height:1.3;padding:4px 6px;width:calc(100% - 6px);text-align:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-height:calc(2.6em + 10px);overflow-wrap:anywhere;color:var(--text);opacity:0;animation:bubble 9s infinite;pointer-events:none;z-index:2;}
+.bubble::after{content:none;position:absolute;bottom:-4px;left:50%;width:6px;height:6px;background:var(--s2);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2);transform:translateX(-50%) rotate(45deg);}
+.zzz{position:absolute;top:30px;right:14%;font-size:11px;color:var(--muted);animation:zzz 3s infinite;}
+.fig.star .fig-name b{color:var(--crocus);}
+
+@keyframes sway{0%,100%{transform:rotate(-2.5deg);}50%{transform:rotate(2.5deg);}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1);}97%{transform:scaleY(.1);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+@keyframes bubble{0%,8%{opacity:0;transform:translate(-50%,6px);}14%,62%{opacity:1;transform:translate(-50%,0);}70%,100%{opacity:0;transform:translate(-50%,-4px);}}
+@keyframes zzz{0%{opacity:0;transform:translate(0,4px);}40%{opacity:1;}100%{opacity:0;transform:translate(6px,-10px);}}
+@keyframes coin{0%{opacity:0;transform:translateY(6px);}30%{opacity:1;}100%{opacity:0;transform:translateY(-18px);}}
+.coin{animation:coin 2.4s infinite;}
+.coin.c2{animation-delay:1.2s;}
+
+/* SECTION + LIST */
+.sec{padding:22px 20px 0;}
+.sec-tag{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.card{background:var(--s1);border:1px solid var(--border);padding:16px;}
+.card+.card{margin-top:2px;}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.row:last-child{border-bottom:none;}
+.row small{color:var(--muted);font-size:10px;display:block;}
+.pos{color:var(--green);} .neg{color:var(--red);}
+.feed-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.feed-emoji{font-size:20px;line-height:1.2;width:28px;text-align:center;flex-shrink:0;}
+.feed-txt{flex:1;font-size:12px;min-width:0;}
+.feed-txt small{color:var(--muted);font-size:10px;}
+.feed-txt p{overflow-wrap:anywhere;}
+
+/* FINANCE */
+.fin-hero{padding:24px 20px 4px;display:flex;gap:16px;align-items:center;}
+.fin-hero svg{width:84px;flex-shrink:0;}
+.fin-label{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.fin-big{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:300;line-height:1.05;}
+.fin-big span{font-size:20px;color:var(--muted);}
+.fin-change{font-size:12px;margin-top:2px;}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--border2);color:var(--muted);}
+.badge.live{border-color:var(--red);color:var(--red);}
+.badge.paper{border-color:var(--crocus);color:var(--crocus);}
+.badge.halt{background:var(--red);border-color:var(--red);color:var(--bg);}
+.badge.demo{border-color:var(--amber);color:var(--amber);}
+.spark{width:100%;height:90px;display:block;}
+.btn{width:100%;min-height:48px;border:1px solid var(--border2);background:var(--s2);font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:12px;transition:all .2s;}
+.btn:active{transform:scale(.99);}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.btn.danger{border-color:var(--red);color:var(--red);}
+.btn.danger.resume{border-color:var(--green);color:var(--green);}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.field{display:block;margin-top:10px;}
+.field span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+.field input{width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--border2);color:var(--text);padding:11px 12px;outline:none;}
+.field input:focus{border-color:var(--gold);}
+.note{font-size:11px;color:var(--muted);line-height:1.7;}
+.note b{color:var(--text);font-weight:400;}
+.steps{counter-reset:s;list-style:none;}
+.steps li{counter-increment:s;position:relative;padding:8px 0 8px 30px;font-size:12px;border-bottom:1px solid var(--border);}
+.steps li:last-child{border-bottom:none;}
+.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:20px;height:20px;border:1px solid var(--gold);color:var(--gold);font-size:10px;display:flex;align-items:center;justify-content:center;}
+code{background:var(--s3);padding:1px 5px;font-size:11px;color:var(--gold);}
+.toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translate(-50%,20px);background:var(--s3);border:1px solid var(--border2);padding:10px 16px;font-size:12px;opacity:0;transition:all .3s;z-index:50;pointer-events:none;max-width:90%;}
+.toast.on{opacity:1;transform:translate(-50%,0);}
+
+/* SHEET */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20;}
+.scrim.on{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:50%;bottom:0;width:100%;max-width:520px;transform:translate(-50%,100%);background:var(--s1);border-top:1px solid var(--border2);padding:10px 22px calc(24px + var(--safe-b));transition:transform .35s cubic-bezier(.25,.46,.45,.94);z-index:21;max-height:82vh;overflow-y:auto;}
+.sheet.on{transform:translate(-50%,0);}
+.grab{width:36px;height:4px;background:var(--border2);margin:0 auto 14px;border-radius:2px;}
+.sh-head{display:flex;gap:14px;align-items:center;}
+.sh-head svg{width:76px;flex-shrink:0;}
+.sh-code{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);}
+.sh-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1.1;}
+.sh-desc{font-size:12px;color:var(--muted);margin:14px 0;line-height:1.75;}
+.sh-list{list-style:none;margin-bottom:14px;}
+.sh-list li{font-size:12px;padding:7px 0;border-bottom:1px solid var(--border);}
+
+@media (min-width:580px){
+  .garden{padding:30px 16px 40px;}
+  .hello-title{font-size:38px;}
+}
+@media (min-width:960px){
+  body{background:radial-gradient(ellipse at 50% 0%,#141210,var(--bg) 60%);}
+  .app{box-shadow:0 0 80px rgba(0,0,0,.6);}
+}
+@media (prefers-reduced-motion:reduce){
+  .fig .body,.fig .eyes,.bubble,.zzz,.coin,.dot.active{animation:none!important;}
+  .bubble{opacity:1;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a href="index.html" class="logo">Blomster <em>Hage</em></a>
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="no">NO</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <main class="screens">
+    <!-- ── ГАРДЕН ── -->
+    <section class="screen on" id="scr-garden">
+      <div class="hello">
+        <div class="hello-tag" id="greet" data-ru="🌱 Доброе утро, Samson" data-no="🌱 God morgen, Samson" data-en="🌱 Good morning, Samson">🌱 Доброе утро, Samson</div>
+        <h1 class="hello-title" data-ru="Твой сад <em>работает</em>" data-no="Hagen din <em>jobber</em>" data-en="Your garden is <em>working</em>">Твой сад <em>работает</em></h1>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-n" id="k-active">5</div><div class="kpi-l" data-ru="Активны" data-no="Aktive" data-en="Active">Активны</div></div>
+        <div class="kpi"><div class="kpi-n" id="k-results">—</div><div class="kpi-l" data-ru="Результатов" data-no="Resultater" data-en="Results">Результатов</div></div>
+        <div class="kpi"><div class="kpi-n" id="k-nok">—</div><div class="kpi-l" data-ru="Портфель kr" data-no="Portefølje kr" data-en="Portfolio kr">Портфель kr</div></div>
+      </div>
+      <div class="garden" id="garden" aria-label="Agents"></div>
+      <div class="sec">
+        <p class="note" data-ru="Нажми на агента, чтобы увидеть, чем он занят." data-no="Trykk på en agent for å se hva den gjør." data-en="Tap an agent to see what it's doing.">Нажми на агента, чтобы увидеть, чем он занят.</p>
+      </div>
+    </section>
+
+    <!-- ── ФИНАНСЫ ── -->
+    <section class="screen" id="scr-fin">
+      <div class="fin-hero">
+        <div id="fin-fig"></div>
+        <div>
+          <div class="fin-label">Crocus Aurum · <span data-ru="Финансист" data-no="Finansagent" data-en="Finance agent">Финансист</span></div>
+          <div class="fin-big"><span>kr</span> <b id="f-nok" style="font-weight:300">—</b></div>
+          <div class="fin-change" id="f-change"></div>
+          <div class="badges" id="f-badges"></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="card" style="padding:10px 6px 4px;"><svg class="spark" id="spark" viewBox="0 0 300 90" preserveAspectRatio="none"></svg></div>
+        <div class="btn-row">
+          <button class="btn danger" id="btn-halt" data-ru="🛑 Стоп торговля" data-no="🛑 Stopp handel" data-en="🛑 Stop trading">🛑 Стоп торговля</button>
+          <button class="btn" id="btn-report" data-ru="📄 Отчёт сейчас" data-no="📄 Rapport nå" data-en="📄 Report now">📄 Отчёт сейчас</button>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-tag" data-ru="Позиции" data-no="Posisjoner" data-en="Positions">Позиции</div>
+        <div class="card" id="f-pos"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-tag" data-ru="Последние сделки" data-no="Siste handler" data-en="Recent trades">Последние сделки</div>
+        <div class="card" id="f-trades"></div>
+      </div>
+      <div class="sec">
+        <div class="sec-tag" data-ru="Подключение" data-no="Tilkobling" data-en="Connection">Подключение</div>
+        <div class="card">
+          <label class="field"><span>API URL</span><input id="in-api" placeholder="http://localhost:8000" autocomplete="off"></label>
+          <label class="field"><span>Admin key</span><input id="in-key" type="password" placeholder="ADMIN_KEY из .env" autocomplete="off"></label>
+          <div class="btn-row"><button class="btn gold" id="btn-save" data-ru="Подключить" data-no="Koble til" data-en="Connect">Подключить</button><button class="btn" id="btn-forget" data-ru="Забыть ключ" data-no="Glem nøkkel" data-en="Forget key">Забыть ключ</button></div>
+          <p class="note" style="margin-top:10px;" data-ru="Ключ хранится только в этом браузере." data-no="Nøkkelen lagres kun i denne nettleseren." data-en="The key is stored only in this browser.">Ключ хранится только в этом браузере.</p>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-tag" data-ru="Как включить реальную торговлю" data-no="Slik slår du på ekte handel" data-en="Going live">Как включить реальную торговлю</div>
+        <div class="card">
+          <ol class="steps">
+            <li data-ru="2–4 недели <b>paper</b> — агент торгует виртуальными 1000 USDT на реальных ценах." data-no="2–4 uker <b>paper</b> — agenten handler med virtuelle 1000 USDT på ekte priser." data-en="2–4 weeks of <b>paper</b> — the agent trades virtual 1000 USDT on real prices.">2–4 недели <b>paper</b> — агент торгует виртуальными 1000 USDT на реальных ценах.</li>
+            <li data-ru="<b>testnet</b> Binance — настоящие ордера, фейковые деньги." data-no="<b>testnet</b> Binance — ekte ordre, falske penger." data-en="Binance <b>testnet</b> — real orders, fake money.">testnet Binance — настоящие ордера, фейковые деньги.</li>
+            <li data-ru="API-ключ Binance <b>без права вывода</b>, с whitelist IP." data-no="Binance API-nøkkel <b>uten uttak</b>, med IP-whitelist." data-en="Binance API key <b>without withdrawals</b>, IP-whitelisted.">API-ключ Binance без права вывода, с whitelist IP.</li>
+            <li data-ru="<b>live</b> с маленьким лимитом: <code>FIN_MAX_ORDER_USDT=20</code>." data-no="<b>live</b> med lav grense: <code>FIN_MAX_ORDER_USDT=20</code>." data-en="<b>live</b> with a small cap: <code>FIN_MAX_ORDER_USDT=20</code>.">live с маленьким лимитом.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ЛЕНТА ── -->
+    <section class="screen" id="scr-feed">
+      <div class="hello">
+        <div class="hello-tag" data-ru="📜 Что делали агенты" data-no="📜 Hva agentene gjorde" data-en="📜 What the agents did">📜 Что делали агенты</div>
+        <h1 class="hello-title" data-ru="Лента <em>сада</em>" data-no="Hagens <em>logg</em>" data-en="Garden <em>feed</em>">Лента <em>сада</em></h1>
+      </div>
+      <div class="sec"><div class="card" id="feed"></div></div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab on" data-scr="scr-garden"><span class="ti">🌸</span><span data-ru="Сад" data-no="Hage" data-en="Garden">Сад</span></button>
+    <button class="tab" data-scr="scr-fin"><span class="ti">💰</span><span data-ru="Финансы" data-no="Økonomi" data-en="Finance">Финансы</span></button>
+    <button class="tab" data-scr="scr-feed"><span class="ti">📜</span><span data-ru="Лента" data-no="Logg" data-en="Feed">Лента</span></button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheet-body"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ── Agents ─────────────────────────────────────────────── */
+const AGENTS = [
+  {id:'rosa', emoji:'✍️', code:'Rosa Damascena', status:'active', petals:{n:9,len:15,w:10,color:'#d86a8a',center:'#8a2f4d',layers:2}, prop:'✍️',
+   name:{ru:'Контент-мастер',no:'Innholdsekspert',en:'Content Master'},
+   desc:{ru:'Пишет посты, статьи и рассылки в твоём голосе.',no:'Skriver innlegg, artikler og nyhetsbrev med din stemme.',en:'Writes posts, articles and newsletters in your voice.'},
+   idle:{ru:'пишу пост…',no:'skriver innlegg…',en:'writing a post…'}},
+  {id:'helianthus', emoji:'📊', code:'Helianthus', status:'active', petals:{n:14,len:14,w:6,color:'#e8b83c',center:'#5a3a1a'}, prop:'📈',
+   name:{ru:'Крипто-трейдер',no:'Krypto-trader',en:'Crypto Trader'},
+   desc:{ru:'Анализирует BTC/ETH/SOL/ADA и рассылает сигналы.',no:'Analyserer BTC/ETH/SOL/ADA og sender signaler.',en:'Analyses BTC/ETH/SOL/ADA and sends signals.'},
+   idle:{ru:'смотрю графики…',no:'ser på grafer…',en:'watching charts…'}},
+  {id:'fern', emoji:'⚙️', code:'Fern Protocol', status:'active', fern:true, prop:'⚙️',
+   name:{ru:'Автоматизатор',no:'Automatisering',en:'Automator'},
+   desc:{ru:'Оптимизирует процессы сада раз в неделю.',no:'Optimaliserer hagens prosesser hver uke.',en:'Optimises the garden’s workflows weekly.'},
+   idle:{ru:'чиню процессы…',no:'fikser flyt…',en:'fixing workflows…'}},
+  {id:'crocus', emoji:'💰', code:'Crocus Aurum', status:'active', star:true, petals:{n:6,len:17,w:9,color:'#a58bd6',center:'#c9a96e'}, prop:'💰',
+   name:{ru:'Финансист',no:'Finansagent',en:'Finance Agent'},
+   desc:{ru:'Торгует на Binance / Revolut X по стратегии EMA+RSI с жёсткими лимитами риска и каждый вечер присылает отчёт в NOK.',no:'Handler på Binance / Revolut X med EMA+RSI og strenge risikogrenser, sender rapport i NOK hver kveld.',en:'Trades on Binance / Revolut X with EMA+RSI and strict risk limits, sends a NOK report every evening.'},
+   idle:{ru:'считаю kr…',no:'teller kr…',en:'counting kr…'}},
+  {id:'poppy', emoji:'🤝', code:'Poppy Sales', status:'beta', petals:{n:4,len:16,w:14,color:'#e0584a',center:'#1a1a1a'}, prop:'✉️',
+   name:{ru:'Аутрич-охотник',no:'Outreach-jeger',en:'Outreach Hunter'},
+   desc:{ru:'Ищет клиентов и пишет им персональные питчи.',no:'Finner kunder og skriver personlige pitcher.',en:'Finds clients and writes personal pitches.'},
+   idle:{ru:'ищу клиентов…',no:'leter etter kunder…',en:'hunting leads…'}},
+  {id:'tulipa', emoji:'🎬', code:'Tulipa Reels', status:'beta', tulip:true, prop:'🎬',
+   name:{ru:'Видео-резчик',no:'Videoklipper',en:'Video Cutter'},
+   desc:{ru:'Нарезает короткие ролики для Reels и Shorts.',no:'Klipper korte videoer for Reels og Shorts.',en:'Cuts short videos for Reels and Shorts.'},
+   idle:{ru:'монтирую…',no:'klipper…',en:'editing…'}},
+  {id:'iris', emoji:'🧠', code:'Iris Intelligence', status:'active', petals:{n:3,len:18,w:11,color:'#6f7fe0',center:'#e3c86a'}, prop:'🔮',
+   name:{ru:'ИИ-аналитик',no:'AI-analytiker',en:'AI Analyst'},
+   desc:{ru:'CEO сада: утренний дайджест и вечерний отчёт.',no:'Hagens CEO: morgenbrief og kveldsrapport.',en:'The garden’s CEO: morning brief and evening report.'},
+   idle:{ru:'планирую день…',no:'planlegger dagen…',en:'planning the day…'}},
+  {id:'seed', emoji:'🌱', code:'Seedling', status:'soon', bud:true,
+   name:{ru:'Новый агент',no:'Ny agent',en:'New agent'},
+   desc:{ru:'Место для следующего агента.',no:'Plass til neste agent.',en:'Room for the next agent.'},
+   idle:{ru:'',no:'',en:''}},
+];
+const STATUS_TXT = {active:{ru:'Активен',no:'Aktiv',en:'Active'},beta:{ru:'Бета',no:'Beta',en:'Beta'},soon:{ru:'Скоро',no:'Snart',en:'Soon'}};
+
+/* ── SVG figure ─────────────────────────────────────────── */
+function flowerHead(a){
+  const cx=50, cy=46;
+  if(a.bud) return `<ellipse cx="${cx}" cy="${cy+6}" rx="11" ry="15" fill="#5f8a52"/><path d="M${cx-8} ${cy} Q${cx} ${cy-16} ${cx+8} ${cy}" fill="#8fbf7a"/>`;
+  if(a.fern){
+    let s=''; for(let i=0;i<7;i++){const ang=-150+i*20; s+=`<ellipse cx="${cx}" cy="${cy-14}" rx="5" ry="15" fill="${i%2?'#6a9a5b':'#7fb77e'}" transform="rotate(${ang+90} ${cx} ${cy})"/>`;}
+    return s+`<circle cx="${cx}" cy="${cy}" r="15" fill="#3f6b3a"/>`;
+  }
+  if(a.tulip) return `<path d="M${cx-18} ${cy-14} L${cx-9} ${cy-4} L${cx} ${cy-18} L${cx+9} ${cy-4} L${cx+18} ${cy-14} Q${cx+20} ${cy+16} ${cx} ${cy+18} Q${cx-20} ${cy+16} ${cx-18} ${cy-14}Z" fill="#e87aa0"/><circle cx="${cx}" cy="${cy+2}" r="13" fill="#f39bb9"/>`;
+  const p=a.petals; let s='';
+  const layers=p.layers||1;
+  for(let l=0;l<layers;l++){
+    const n=p.n, off=l*(180/n), len=p.len-l*4, col=l?shade(p.color,-18):p.color;
+    for(let i=0;i<n;i++){const ang=i*360/n+off; s+=`<ellipse cx="${cx}" cy="${cy-12-len/2}" rx="${p.w/2+2}" ry="${len/2+5}" fill="${col}" transform="rotate(${ang} ${cx} ${cy})"/>`;}
+  }
+  return s+`<circle cx="${cx}" cy="${cy}" r="14" fill="${p.center}"/>`;
+}
+function shade(hex,amt){const n=parseInt(hex.slice(1),16);const c=v=>Math.max(0,Math.min(255,v+amt));return '#'+((c(n>>16)<<16)|(c((n>>8)&255)<<8)|c(n&255)).toString(16).padStart(6,'0');}
+function face(a){
+  const cx=50, cy=46;
+  if(a.bud) return `<path d="M${cx-5} ${cy+5} q2 2 4 0 M${cx+1} ${cy+5} q2 2 4 0" stroke="#1a2a16" stroke-width="1.4" fill="none" stroke-linecap="round"/>`;
+  const sleepy=a.status==='soon';
+  return `<g class="eyes"><ellipse cx="${cx-5}" cy="${cy-2}" rx="2" ry="${sleepy?0.6:2.6}" fill="#fff8ea"/><ellipse cx="${cx+5}" cy="${cy-2}" rx="2" ry="${sleepy?0.6:2.6}" fill="#fff8ea"/></g>
+  <circle cx="${cx-9}" cy="${cy+4}" r="2.4" fill="#ff9fb0" opacity=".35"/><circle cx="${cx+9}" cy="${cy+4}" r="2.4" fill="#ff9fb0" opacity=".35"/>
+  <path d="M${cx-4} ${cy+5} Q${cx} ${cy+9} ${cx+4} ${cy+5}" stroke="#fff8ea" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+}
+function figure(a){
+  const extra = a.id==='crocus'
+    ? `<text class="coin" x="80" y="40" font-size="11">🪙</text><text class="coin c2" x="12" y="52" font-size="10">🪙</text>` : '';
+  const prop = a.prop ? `<text x="72" y="104" font-size="15">${a.prop}</text>` : '';
+  return `<svg viewBox="0 0 100 160" aria-hidden="true">
+    <ellipse cx="50" cy="152" rx="24" ry="4" fill="rgba(0,0,0,.45)"/>
+    <g class="body">
+      <path d="M50 150 Q47 120 50 62" stroke="var(--stem)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M49 108 Q30 98 22 104 Q34 114 49 112Z" fill="var(--leaf)"/>
+      <path d="M51 100 Q68 88 78 94 Q66 106 51 104Z" fill="var(--leaf)"/>
+      ${flowerHead(a)}${face(a)}${prop}${extra}
+    </g>
+  </svg>`;
+}
+
+/* ── i18n ───────────────────────────────────────────────── */
+let lang = (()=>{try{return localStorage.getItem('bh_lang')||'ru';}catch(e){return 'ru';}})();
+const t = o => (o && (o[lang]||o.ru)) || '';
+function applyLang(){
+  document.documentElement.lang = lang==='no'?'nb':lang;
+  document.querySelectorAll('[data-'+lang+']').forEach(el=>{el.innerHTML=el.getAttribute('data-'+lang);});
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  greet(); renderGarden(); renderFinance(); renderFeed();
+}
+function greet(){
+  const h=new Date().getHours();
+  const g = h<5?{ru:'🌙 Доброй ночи',no:'🌙 God natt',en:'🌙 Good night'}
+          : h<12?{ru:'🌱 Доброе утро',no:'🌱 God morgen',en:'🌱 Good morning'}
+          : h<18?{ru:'☀️ Добрый день',no:'☀️ God dag',en:'☀️ Good afternoon'}
+          :{ru:'🌆 Добрый вечер',no:'🌆 God kveld',en:'🌆 Good evening'};
+  document.getElementById('greet').textContent = t(g)+', Samson';
+}
+document.querySelectorAll('.lang-btn').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;try{localStorage.setItem('bh_lang',lang);}catch(e){}applyLang();});
+
+/* ── State + API ────────────────────────────────────────── */
+const store = {
+  get(k,d=''){try{return localStorage.getItem(k)??d;}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){}},
+  del(k){try{localStorage.removeItem(k);}catch(e){}},
+};
+let apiBase = store.get('bh_api', location.protocol.startsWith('http') && location.port==='8000' ? location.origin : 'http://localhost:8000');
+let adminKey = store.get('bh_key');
+let gardenData = {}, fin = null, finDemo = true;
+
+async function api(path, opts={}){
+  const r = await fetch(apiBase.replace(/\/$/,'')+path, {...opts, headers:{'Content-Type':'application/json','X-Admin-Key':adminKey,...(opts.headers||{})}});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error||r.status);
+  return j;
+}
+
+function demoFinance(){
+  const hist=[]; let v=9500;
+  for(let i=0;i<48;i++){v+=Math.sin(i/5)*40+(Math.random()-.45)*30; hist.push({nok:Math.round(v)});}
+  return {mode:'paper',broker:'binance',halted:false,history:hist,
+    latest:{equity_nok:hist.at(-1).nok,equity_usdt:+(hist.at(-1).nok/10.5).toFixed(2),positions:{
+      USDT:{qty:852.4,value_usdt:852.4},ETH:{qty:0.0186,value_usdt:50.1},BTC:{qty:0.0006,value_usdt:50.2}}},
+    trades:[
+      {symbol:'BTCUSDT',side:'BUY',price:83545,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 52',ts:'2026-09-28 08:05'},
+      {symbol:'ETHUSDT',side:'SELL',price:2651,quote_usdt:48.9,pnl_usdt:-1.12,reason:'stop-loss −4%',ts:'2026-09-27 16:05'},
+      {symbol:'ETHUSDT',side:'BUY',price:2684,quote_usdt:50,pnl_usdt:null,reason:'EMA20 > EMA50, RSI 48',ts:'2026-09-27 12:05'}]};
+}
+
+async function load(){
+  try{ gardenData = (await api('/api/garden')).agents||{}; }catch(e){ gardenData = {}; }
+  if(adminKey){
+    try{ fin = await api('/api/finance/status'); finDemo=false; }
+    catch(e){ fin = demoFinance(); finDemo=true; if(e.message!=='Failed to fetch') toast('⚠️ '+e.message); }
+  } else { fin = demoFinance(); finDemo=true; }
+  renderGarden(); renderFinance(); renderFeed();
+}
+
+/* ── Render: garden ─────────────────────────────────────── */
+function lastLine(a){
+  const g = gardenData[a.id];
+  if(g) return `${g.last_action}${g.detail?': '+g.detail:''}`;
+  return t(a.idle);
+}
+function renderGarden(){
+  const el=document.getElementById('garden');
+  el.innerHTML = AGENTS.map((a,i)=>`
+    <button class="fig${a.star?' star':''}" data-status="${a.status}" data-id="${a.id}" style="--d:${i}">
+      ${a.status!=='soon' && lastLine(a) ? `<span class="bubble" style="animation-delay:${i*1.3}s">${esc(lastLine(a))}</span>`:''}
+      ${a.status==='soon'?'<span class="zzz">z z</span>':''}
+      ${figure(a)}
+      <span class="fig-name"><b>${t(a.name)}</b><i class="dot ${a.status}"></i>${a.code.split(' ')[0]}</span>
+    </button>`).join('');
+  el.querySelectorAll('.fig').forEach(b=>b.onclick=()=>openSheet(b.dataset.id));
+  el.querySelectorAll('.body').forEach((b,i)=>b.style.animationDelay=(-i*0.7)+'s');
+  document.getElementById('k-active').textContent = AGENTS.filter(a=>a.status==='active').length;
+  const total = Object.values(gardenData).reduce((s,g)=>s+(g.results||0),0);
+  document.getElementById('k-results').textContent = total || '—';
+  document.getElementById('k-nok').textContent = fin?.latest ? fmt(fin.latest.equity_nok) : '—';
+}
+
+/* ── Render: finance ────────────────────────────────────── */
+function renderFinance(){
+  if(!fin) return;
+  const crocus = AGENTS.find(a=>a.id==='crocus');
+  document.getElementById('fin-fig').innerHTML = figure(crocus);
+  const L = fin.latest || {equity_nok:0,equity_usdt:0,positions:{}};
+  document.getElementById('f-nok').textContent = fmt(L.equity_nok);
+  const h = fin.history||[];
+  const ch = h.length>1 ? h.at(-1).nok - h[0].nok : 0;
+  const chEl=document.getElementById('f-change');
+  chEl.className='fin-change '+(ch>=0?'pos':'neg');
+  chEl.textContent = h.length>1 ? `${ch>=0?'+':''}${fmt(ch)} kr · ${(ch/h[0].nok*100).toFixed(2)}%` : '';
+  const B=[];
+  if(finDemo) B.push(`<span class="badge demo">${t({ru:'демо',no:'demo',en:'demo'})}</span>`);
+  B.push(`<span class="badge ${fin.mode==='live'?'live':'paper'}">${fin.mode}</span>`);
+  B.push(`<span class="badge">${fin.broker}</span>`);
+  if(fin.halted) B.push(`<span class="badge halt">${t({ru:'остановлен',no:'stoppet',en:'halted'})}</span>`);
+  document.getElementById('f-badges').innerHTML = B.join('');
+
+  // sparkline
+  const sv=document.getElementById('spark');
+  if(h.length>1){
+    const vals=h.map(x=>x.nok), mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+    const pts=vals.map((v,i)=>`${(i/(vals.length-1)*300).toFixed(1)},${(82-(v-mn)/rg*72).toFixed(1)}`);
+    const col = ch>=0?'var(--gold)':'var(--red)';
+    sv.innerHTML=`<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${ch>=0?'#c9a96e':'#e07a6a'}" stop-opacity=".25"/><stop offset="1" stop-color="#c9a96e" stop-opacity="0"/></linearGradient></defs>
+      <polygon points="0,90 ${pts.join(' ')} 300,90" fill="url(#sg)"/>
+      <polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>`;
+  } else sv.innerHTML=`<text x="150" y="50" text-anchor="middle" fill="rgba(230,226,216,.38)" font-size="10">${t({ru:'нет данных',no:'ingen data',en:'no data yet'})}</text>`;
+
+  const pos=Object.entries(L.positions||{});
+  document.getElementById('f-pos').innerHTML = pos.length ? pos.map(([a,p])=>`
+    <div class="row"><div>${a}<small>${(+p.qty).toPrecision(4)}</small></div><div>${(+p.value_usdt).toFixed(2)} USDT<small style="text-align:right">≈ kr ${fmt(p.value_usdt*(L.equity_usdt?L.equity_nok/L.equity_usdt:10.5))}</small></div></div>`).join('')
+    : `<p class="note">${t({ru:'Пока пусто',no:'Tomt ennå',en:'Empty for now'})}</p>`;
+
+  const tr=fin.trades||[];
+  document.getElementById('f-trades').innerHTML = tr.length ? tr.map(x=>`
+    <div class="row"><div><span class="${x.side==='BUY'?'pos':'neg'}">${x.side==='BUY'?'🟢':'🔴'} ${x.side}</span> ${x.symbol}<small>${esc(x.reason||'')} · ${ts(x.ts)}</small></div>
+    <div style="text-align:right">${(+x.price).toFixed(2)}<small class="${x.pnl_usdt==null?'':(x.pnl_usdt>=0?'pos':'neg')}">${x.pnl_usdt==null?(+x.quote_usdt).toFixed(2)+' USDT':(x.pnl_usdt>=0?'+':'')+(+x.pnl_usdt).toFixed(2)+' P&L'}</small></div></div>`).join('')
+    : `<p class="note">${t({ru:'Сделок ещё не было',no:'Ingen handler ennå',en:'No trades yet'})}</p>`;
+
+  const hb=document.getElementById('btn-halt');
+  hb.classList.toggle('resume',!!fin.halted);
+  hb.textContent = fin.halted ? t({ru:'▶️ Возобновить',no:'▶️ Gjenoppta',en:'▶️ Resume'}) : t({ru:'🛑 Стоп торговля',no:'🛑 Stopp handel',en:'🛑 Stop trading'});
+  document.getElementById('in-api').value = apiBase;
+}
+
+/* ── Render: feed ───────────────────────────────────────── */
+function renderFeed(){
+  const items = AGENTS.filter(a=>a.status!=='soon').map(a=>{
+    const g=gardenData[a.id];
+    return {a, text: g?`${g.last_action}${g.detail?': '+g.detail:''}`:t(a.idle), tsv:g?.ts||''};
+  }).sort((x,y)=>y.tsv.localeCompare(x.tsv));
+  document.getElementById('feed').innerHTML = items.map(({a,text,tsv})=>`
+    <div class="feed-item"><div class="feed-emoji">${a.emoji}</div>
+    <div class="feed-txt"><b>${t(a.name)}</b> <small>· ${a.code}${tsv?' · '+ts(tsv):''}</small><p>${esc(text)}</p></div></div>`).join('');
+}
+
+/* ── Sheet ──────────────────────────────────────────────── */
+function openSheet(id){
+  const a=AGENTS.find(x=>x.id===id), g=gardenData[id];
+  document.getElementById('sheet-body').innerHTML = `
+    <div class="sh-head">${figure(a)}<div><div class="sh-code">${a.code} · <i class="dot ${a.status}"></i>${t(STATUS_TXT[a.status])}</div><div class="sh-name">${t(a.name)}</div></div></div>
+    <p class="sh-desc">${t(a.desc)}</p>
+    <ul class="sh-list">
+      <li>🕐 ${t({ru:'Последнее действие',no:'Siste handling',en:'Last action'})}: ${g?esc(g.last_action)+' · '+ts(g.ts):'—'}</li>
+      <li>📦 ${t({ru:'Результатов',no:'Resultater',en:'Results'})}: ${g?g.results:'—'}</li>
+      ${g&&g.detail?`<li>💬 ${esc(g.detail)}</li>`:''}
+    </ul>
+    ${id==='crocus'?`<button class="btn gold" onclick="closeSheet();go('scr-fin')">${t({ru:'💰 Открыть финансы',no:'💰 Åpne økonomi',en:'💰 Open finance'})}</button>`:''}`;
+  document.getElementById('sheet').classList.add('on');
+  document.getElementById('scrim').classList.add('on');
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+document.getElementById('scrim').onclick=closeSheet;
+let sy=null; const sh=document.getElementById('sheet');
+sh.addEventListener('touchstart',e=>{sy=e.touches[0].clientY;},{passive:true});
+sh.addEventListener('touchend',e=>{if(sy!==null&&e.changedTouches[0].clientY-sy>70&&sh.scrollTop<=0)closeSheet();sy=null;});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+
+/* ── Tabs ───────────────────────────────────────────────── */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.scr===id));
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>go(b.dataset.scr));
+
+/* ── Actions ────────────────────────────────────────────── */
+document.getElementById('btn-save').onclick=()=>{
+  apiBase=document.getElementById('in-api').value.trim()||apiBase;
+  adminKey=document.getElementById('in-key').value.trim()||adminKey;
+  store.set('bh_api',apiBase); if(adminKey) store.set('bh_key',adminKey);
+  document.getElementById('in-key').value='';
+  toast(t({ru:'Подключаю…',no:'Kobler til…',en:'Connecting…'})); load();
+};
+document.getElementById('btn-forget').onclick=()=>{adminKey='';store.del('bh_key');toast('🔒 OK');load();};
+document.getElementById('btn-halt').onclick=async()=>{
+  if(finDemo) return toast(t({ru:'Сначала подключи API',no:'Koble til API først',en:'Connect the API first'}));
+  const stop=!fin.halted;
+  if(stop && !confirm(t({ru:'Остановить всю торговлю?',no:'Stoppe all handel?',en:'Stop all trading?'}))) return;
+  try{ await api(stop?'/api/finance/halt':'/api/finance/resume',{method:'POST'}); toast(stop?'🛑':'▶️'); load(); }
+  catch(e){ toast('⚠️ '+e.message); }
+};
+document.getElementById('btn-report').onclick=async()=>{
+  if(finDemo) return toast(t({ru:'Сначала подключи API',no:'Koble til API først',en:'Connect the API first'}));
+  toast(t({ru:'Готовлю отчёт…',no:'Lager rapport…',en:'Building report…'}));
+  try{ await api('/api/finance/report',{method:'POST'}); toast(t({ru:'📄 Отчёт отправлен',no:'📄 Rapport sendt',en:'📄 Report sent'})); }
+  catch(e){ toast('⚠️ '+e.message); }
+};
+
+/* ── Utils ──────────────────────────────────────────────── */
+function ts(s){return String(s||'').replace('T',' ').slice(5,16);}
+function fmt(n){return Math.round(+n||0).toLocaleString('nb-NO').replace(/ /g,' ');}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+let tt; function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2600);}
+
+applyLang();
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@
 | `blog.html` | `/blog` | Кейсы и статьи для трафика |
 | `admin.html` | `/admin` | Управление waitlist и рассылкой |
 | `intel.html` | `/intel` | Поиск трендов и фриланс-задач |
+| `garden.html` | `/garden` | Приложение: агенты-фигурки, финансы, лента |
 
 ## Быстрый старт
 
@@ -41,6 +42,29 @@ vercel --prod
 # или:
 npx netlify-cli deploy --prod --dir .
 ```
+
+## 💰🌼 Финансовый агент — Crocus Aurum
+
+Каждый час: портфель → риск-проверки → EMA/RSI → ордер → уведомление в Telegram.
+Каждый вечер в 21:00: отчёт в NOK (P&L, сделки, оценка налога 22%) → email + Telegram.
+
+```bash
+cp .env.example .env          # задай ADMIN_KEY, TELEGRAM_*, FIN_*
+python run.py test crocus     # один цикл + отчёт (paper)
+python run.py all             # API + все агенты по расписанию
+```
+
+| Режим | Деньги | Что нужно |
+|-------|--------|-----------|
+| `paper` | виртуальные 1000 USDT | ничего |
+| `testnet` | фейковые, реальные ордера | ключи testnet.binance.vision |
+| `live` | **реальные** | ключ Binance без Withdraw + `FIN_LIVE_CONFIRM` |
+
+Revolut: у обычного приложения (акции) API нет. Есть только у крипто-биржи **Revolut X**.
+Адаптер для неё экспериментальный: `FIN_BROKER=revolut`, `REVOLUT_X_TRADING=1`.
+
+Защита: лимит на ордер, лимит позиции, стоп-лосс, автостоп при дневном убытке,
+лимит сделок в день, кнопка «Стоп торговля» в приложении (`/api/finance/halt`).
 
 ## Стек
 
